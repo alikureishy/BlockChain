@@ -1,0 +1,17 @@
+{
+  "name": "Project_2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "test.js",
+  "directories": {},
+  "scripts": {},
+  "author": "",
+  "license": "GPL",
+  "devDependencies": {},
+  "dependencies": {
+    "chai": "^4.2.0",
+    "crypto-js": "^3.1.9-1",
+    "level": "^4.0.0",
+    "mocha": "^5.2.0"
+  }
+}
