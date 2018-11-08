@@ -41,6 +41,10 @@ class Block{
 |  Class with a constructor for new blockchain 		|
 |  ================================================*/
 class Blockchain{
+  static createBlockChain() {
+    persistorPromise = Persistor.createPersistor();
+  }
+
   constructor(){
     this.store = new Persistor();
 

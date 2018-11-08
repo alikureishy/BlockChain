@@ -36,8 +36,8 @@ class Persistor {
                         console.log("Exiting promise.");
                     }
                 ).then(
-                    function(value) {
-                        persistor.count = value;
+                    function(count) {
+                        persistor.blobCount = count;
                         resolve(persistor);
                     }
                 );
@@ -48,7 +48,7 @@ class Persistor {
 	// Declaring the class constructor
     constructor() {
         this.db = level(folder);
-        this.count = 0;
+        this.blobCount = 0;
     }
   
   	// Get data from levelDB with key (Promise)
@@ -79,7 +79,7 @@ class Persistor {
                     console.log('Blob ' + key + ' submission failed', err);
                     reject(err);
                 }
-                self.count = self.count + 1;
+                self.blobCount = self.blobCount + 1;
                 resolve(blob);
             });
         });
@@ -88,19 +88,19 @@ class Persistor {
     // Add data to levelDB with value
     appendBlob(blob) {
         let self = this;
-        return self.addBlob(this.count, blob)
+        return self.addBlob(this.blobCount, blob)
                     .then (
                         function(addedBlob) {
-                            return self.count++;
+                            return self.blobCount++;
                         }
                     );
     }
 
   	// Implement this method
-    getItemCount() {
+    getBlobCount() {
         let self = this;
         return new Promise(function(resolve, reject) {
-            resolve(self.count);
+            resolve(self.blobCount);
         });
     }
 }
