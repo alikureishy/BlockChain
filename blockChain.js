@@ -8,130 +8,256 @@ const Persistor = require('./blockStore.js')
 |  Class with a constructor for block 			   |
 |  ===============================================*/
 class Block{
+  static createGenesisBlock(data) {
+    var genesisBlock = new Block(data);
+    genesisBlock.time = new Date().getTime().toString().slice(0,-3);
+    genesisBlock.height = 0;
+    genesisBlock.previousBlockHash = "";
+    genesisBlock.hash = genesisBlock.calculateHash();
+    return genesisBlock;
+  }
+
+  static fromBlob(blob) {
+    return JSON.parse(JSON.stringify(blob));
+  }
+
 	constructor(data){
-     this.hash = "",
-     this.height = 0,
-     this.body = data,
-     this.time = 0,
-     this.previousBlockHash = ""
-    }
+    this.body = data;
+    this.time = null;
+    this.height = null;
+    this.previousBlockHash = null;
+    this.hash = null;
+  }
 
-    calculateHash() {
-      let blockHash = this.hash;
-      this.hash = '';
+  calculateHash() {
+    let blockHash = this.hash;
+    this.hash = '';
 
-      // Recalculate the correct hash
-      let validBlockHash = SHA256(JSON.stringify(this)).toString();
-      this.hash = blockHash;
+    // Recalculate the correct hash
+    let validBlockHash = SHA256(JSON.stringify(this)).toString();
+    this.hash = blockHash;
 
-      return validBlockHash;
-    }
+    return validBlockHash;
+  }
 
-    validate() {
-      return (this.hash===this.calculateHash());
-    }
+  validate() {
+    return (this.hash===this.calculateHash());
+  }
 
-    isPrecursorTo(nextBlock) {
-      return (this.hash === nextBlock.previousBlockHash);
-    }
-
+  isPrecursorTo(nextBlock) {
+    return (this.hash === nextBlock.previousBlockHash);
+  }
 }
 
 /* ===== Blockchain Class ==========================
 |  Class with a constructor for new blockchain 		|
 |  ================================================*/
-class Blockchain{
-  static createBlockChain() {
-    persistorPromise = Persistor.createPersistor();
+
+class BlockChain{
+  static afterCreateBlockChain(folder) {
+    let blockChain = new BlockChain(folder);
+    return blockChain.whenPersistorReady.then(
+      function(persistor) {
+        return blockChain;
+      },
+      function(err) {
+        console.log(err);
+      }
+    )
   }
 
-  constructor(){
-    this.store = new Persistor();
-
-    if (db.empty()) {
-      console.info("Initializing database...");
-      this.addBlock(new Block("First block in the chain - Genesis block"));
-      console.info("Added Genesis block");
-    } else {
-      console.info("Reading from database...");
-    }
-    
-    this.count = db.getCount();
+  constructor(folder){
+    let self = this;
+    self.whenPersistorReady = 
+      new Promise(
+        function(resolve, reject) {
+          Persistor.afterCreatePersistor(folder).then(
+            function(persistor) {
+              if (persistor.getBlobCount()==0) {
+                console.info("Initializing empty database...");
+                let genesisBlock = Block.createGenesisBlock("Genesis Block");
+                persistor.afterAddBlob(0, genesisBlock).then(
+                  function(blob) {
+                    console.info("Added 'Genesis Block': \n", blob);
+                    return persistor;
+                  },
+                  function(err) {
+                    console.log(err);
+                  });
+              } else {
+                console.info("Database already exists. Skipping genesis block creation.");
+                return persistor;
+              }
+            },
+            function(err) {
+              console.log(err);
+            }
+          );
+        }
+      );
   }
 
   // Add new block
-  addBlock(newBlock){
-    console.info("Adding new block...");
+  afterAddBlock(newBlock){
+    let self = this;
+    return self.whenPersistorReady.then(
+      function(persistor) {
+        console.info("Adding new block...");
+        assert (persistor.getBlobCount() >= 1, "Blockchain has no Genesis Block!!");
 
-    // Initializing necessary fields:
-    newBlock.height = this.count;
-    newBlock.time = new Date().getTime().toString().slice(0,-3);
-    if(this.count>0){
-      newBlock.previousBlockHash = this.store.getBestBlock().hash;
-    } else {
-      newBlock.previousBlockHash = null;
-    }
-    newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-
-    // Persist the block:
-    this.store.addBlock (newBlock);
+        // Initializing necessary fields:
+        newBlock.height = persistor.getBlobCount();
+        newBlock.time = new Date().getTime().toString().slice(0,-3);
+        self.afterGetBestBlock().then(
+          function(bestBlock) {
+            newBlock.previousBlockHash = bestBlock.hash;
+            newBlock.hash = newBlock.calculateHash();
     
-    return newBlock;
+            // Persist the block:            
+            return persistor.afterAddBlock(newBlock.height, newBlock).then(
+              function(blob) {
+                return Block.fromBlob(blob);
+              },
+              function(err) {
+                console.log(err);
+              }
+            );
+          },
+          function(err) {
+            console.log(err);
+          }
+        );
+      },
+      function(err) {
+        console.log(err);
+      }
+    );
   }
 
-  // Get block height
-    getBestBlockHeight(){
-      return this.count - 1;
-    }
-
-    // get block
-    getBlock(blockHeight){
-      if (blockHeight >= this.count) {
-        throw "Invalid block height referenced";
-      }
-      return JSON.parse(JSON.stringify(this.store.getBlock(blockHeight)));
-    }
-
-    // validate block
-    assertValidity(blockHeight){
-      let block = this.getBlock(blockHeight);
-      if (block.isValid()) {
-          return true;
+  afterGetBestBlock() {
+    let self = this;
+    return self.whenPersistorReady.then(
+      function(persistor) {
+        if (persistor.getBlobCount() == 0) {
+          return null;
         } else {
-          console.warn('Block #'+blockHeight+' has an invalid hash');
-          return false;
+          return self.afterGetBlock(persistor.getBlobCount()-1);
         }
-    }
-
-   // Validate blockchain
-    getInvalidBlockList(){
-      let hashErrors = [];
-      let linkErrors = [];
-      for (var i = 0; i < this.count-1; i++) {
-        // First validate block hash itself:
-        let block = this.getBlock(i);
-        if (!block.isValid()) {
-          hashErrors.push(i);
-        }
-
-        // Next validate the back pointer from the next block:
-        let nextBlock = this.getBlock(i+1);
-        if (!block.isPrecursorTo(nextBlock)) {
-          linkErrors.push(i);
-        }
+      },
+      function(err) {
+        console.log(err);
       }
-      return [hashErrors, linkErrors];
-    }
+    )
+  }
 
-    isBlockchainValid() {
-      return this.getInvalidBlockList().length === 0;
-    }
+  // get block
+  afterGetBlock(blockHeight){
+    let self = this;
+    return self.whenPersistorReady.then(
+      function(persistor) {
+        if (blockHeight >= persistor.getBlobCount()) {
+          throw "Invalid block height referenced";
+        }
+        return this.store.afterGetBlock(blockHeight).then(
+          function(blob) {
+            return Block.fromBlob(blob);
+          },
+          function(err) {
+            console.log(err);
+          }
+        );
+      }
+    );
+  }
+
+  afterGetBlockCount() {
+    let self = this;
+    return self.whenPersistorReady.then(
+      function(persistor) {
+        return persistor.getBlobCount();
+      },
+      function(err) {
+        console.log(err);
+      }
+    );
+  }
+
+
+  // validate block
+  afterAssertValidity(blockHeight) {
+    let self = this;
+    return self.whenPersistorReady.then(
+      function() {
+        return self.afterGetBlock(blockHeight).then(
+          function(block) {
+            if (block.isValid()) {
+              return true;
+            } else {
+              console.warn('Block #'+blockHeight+' has an invalid hash');
+              return false;
+            }
+          },
+          function(err) {
+            console.log(err);
+          }
+        )
+      },
+      function(err) {
+        console.log(err);
+      }
+    );
+  }
+
+  // Validate blockchain
+  afterGetInvalidBlocks() {
+    let self = this;
+    return self.whenPersistorReady.then(
+      function(persistor) {
+        let hashErrors = [];
+        let linkErrors = [];
+        for (var i = 0; i < persistor.getBlobCount()-1; i++) {
+          // First validate block hash itafter:
+          let block = this.afterGetBlock(i);
+          if (!block.isValid()) {
+            hashErrors.push(i);
+          }
+
+          // Next validate the back pointer from the next block:
+          let nextBlock = this.afterGetBlock(i+1);
+          if (!block.isPrecursorTo(nextBlock)) {
+            linkErrors.push(i);
+          }
+        }
+        return [hashErrors, linkErrors];
+      },
+      function(err) {
+        console.log(err);
+      }
+    );
+  }
 }
 
-persistor = new Persistor();
-(function theLoop (i) {
-  setTimeout(function () {
-    persistor.addBlockDataStream('Testing data');
-    if (--i) theLoop(i);
-  }, 100);
-})(10);
+console.log("====== BlockChain Tests ======");
+var blockChainTestComplete = BlockChain.afterCreateBlockChain("./chaindata1").then(
+  function(blockChain) {
+    console.log("Entering loop...");
+    (function theLoop (i) {
+      setTimeout(function () {
+          let toAdd = new Block("Test Block - " + (i - 1));
+          return blockChain.afterAddBlock(toAdd).then(
+            function(blob) {
+              retrieved = Block.fromBlob(blob);
+              console.log("Created block: ", retrieved)
+              if (--i) theLoop(i);
+            }
+          );
+      }, 100);
+    })(10);
+  }
+);
+console.log(blockChainTestComplete);
+blockChainTestComplete.then(
+  function() {
+      console.log("====== BlockChain DONE!! ======");
+  }
+);
