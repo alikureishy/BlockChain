@@ -5,7 +5,7 @@
 /* ===== Persist data with LevelDB ==================
 |  Learn more: level: https://github.com/Level/level |
 /===================================================*/
-
+const assert = require('assert');
 // Importing the module 'level'
 const level = require('level');
 
@@ -14,30 +14,46 @@ const folder = './chaindata';
 
 // Declaring a class
 class Persistor {
-	// Declaring the class constructor
-    constructor() {
-        this.db = level(folder),
-        this.count = 0,
-        this.initialize();
+    static createPersistor() {
+        return new Promise(
+            function(resolve, reject) {
+                var persistor = new Persistor();
+                var counterPromise = new Promise(
+                    function(resolve, reject) {
+                        console.log("Reading:Start...");
+                        var counter = 0;
+                        persistor.db.createReadStream()
+                        .on('data', function(data) {
+                            console.log(".")
+                            counter++;
+                        }).on('error', function(err) {
+                            console.log(err);
+                            reject(err);
+                        }).on('close', function() {
+                            console.log("...Reading:End");
+                            resolve(counter);
+                        });
+                        console.log("Exiting promise.");
+                    }
+                ).then(
+                    function(value) {
+                        persistor.count = value;
+                        resolve(persistor);
+                    }
+                );
+            }
+        );
     }
 
-    initialize() {
-        let i = 0;
-        this.db.createValueStream().on('data', function (data) {
-            i++;
-            console.info('Read blob #' + i + ' -> ' + data);
-        }).on('error', function(err) {
-            return console.info('Unable to read data stream!', err)
-        }).on('close', function() {
-            console.info('Finished reading.');
-        });
-        this.count = i;
-        console.info('Blob count: ' + this.count);
+	// Declaring the class constructor
+    constructor() {
+        this.db = level(folder);
+        this.count = 0;
     }
   
   	// Get data from levelDB with key (Promise)
-  	getBlobData(key){
-        let self = this; // because we are returning a promise we will need this to be able to reference 'this' inside the Promise constructor
+  	getBlob(key) {
+        let self = this; // we will need 'self'' to be able to reference the current object inside the Promise constructor where a new 'this' comes into scope 
         return new Promise(function(resolve, reject) {
             self.db.get(key, (err, value) => {
                 if(err){
@@ -55,32 +71,29 @@ class Persistor {
     }
   
   	// Add data to levelDB with key and value (Promise)
-    addBlobData(key, value) {
+    addBlob(key, blob) {
         let self = this;
         return new Promise(function(resolve, reject) {
-            self.db.put(key, value, function(err) {
+            self.db.put(key, blob, function(err) {
                 if (err) {
                     console.log('Blob ' + key + ' submission failed', err);
                     reject(err);
                 }
                 self.count = self.count + 1;
-                resolve(value);
+                resolve(blob);
             });
         });
     }
 
     // Add data to levelDB with value
-    addBlobDataStream(value) {
+    appendBlob(blob) {
         let self = this;
-        let i = 0;
-        self.db.createReadStream().on('data', function(data) {
-            i++;
-        }).on('error', function(err) {
-            return console.log('Unable to read data stream!', err)
-        }).on('close', function() {
-            console.log('Blob #' + i);
-            self.addBlobData(i, value);
-        });
+        return self.addBlob(this.count, blob)
+                    .then (
+                        function(addedBlob) {
+                            return self.count++;
+                        }
+                    );
     }
 
   	// Implement this method
@@ -107,10 +120,19 @@ module.exports = Persistor;
 |  ===========================================================================*/
 
 
-persistor = new Persistor();
-(function theLoop (i) {
-  setTimeout(function () {
-    persistor.addBlobDataStream('Dummy blob');
-    if (--i) theLoop(i);
-  }, 100);
-})(10);
+persistorPromise = Persistor.createPersistor()
+                            .then(
+                                (persistor) => {
+                                    console.log("Total blocks: ", persistor.count);
+                                    (function theLoop (i) {
+                                        // console.log("Recursing:", i);
+                                        setTimeout(function () {
+                                            persistor.appendBlob('Dummy blob')
+                                                     .then(function(blobHeight) {
+                                                        console.log('Added blob #' + blobHeight);
+                                                        if (--i) theLoop(i);
+                                                     });
+                                        }, 100);
+                                    })(10);
+                                }
+                            );
