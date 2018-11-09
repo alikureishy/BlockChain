@@ -31,7 +31,7 @@ class Persistor {
                 ).then(
                     function(count) {
                         persistor.blobCount = count;
-                        return(persistor);
+                        resolve(persistor);
                     },
                     function(err) {
                         console.log(err);
@@ -119,31 +119,31 @@ module.exports = Persistor;
 |  ===========================================================================*/
 
 
-console.log("====== Persistor Tests ======");
-var storageTestComplete = 
-    Persistor.afterCreatePersistor("./chaindata2").then(
-        function(persistor) {
-            console.log("Total blocks: ", persistor.blobCount);
-            (function theLoop (i) {
-                // console.log("Recursing:", i);
-                setTimeout(function () {
-                    persistor.afterAppendBlob('Dummy blob').then(
-                        function(blobHeight) {
-                            console.log('Added blob #' + blobHeight);
-                            if (--i) theLoop(i);
-                        },
-                        function(err) {
-                            console.log(err);
-                        }
-                    );
-                }, 100);
-            })(10);
-        }
-    );
-console.log(storageTestComplete);
-storageTestComplete.then(
-    function() {
-        console.log("====== Persistor DONE!! ======");
-    }
-);
+// console.log("====== Persistor Tests ======");
+// var storageTestComplete = 
+//     Persistor.afterCreatePersistor("./chaindata2").then(
+//         function(persistor) {
+//             console.log("Total blocks: ", persistor.blobCount);
+//             (function theLoop (i) {
+//                 // console.log("Recursing:", i);
+//                 setTimeout(function () {
+//                     persistor.afterAppendBlob('Dummy blob').then(
+//                         function(blobHeight) {
+//                             console.log('Added blob #' + blobHeight);
+//                             if (--i) theLoop(i);
+//                         },
+//                         function(err) {
+//                             console.log(err);
+//                         }
+//                     );
+//                 }, 100);
+//             })(10);
+//         }
+//     );
+// console.log(storageTestComplete);
+// storageTestComplete.then(
+//     function() {
+//         console.log("====== Persistor DONE!! ======");
+//     }
+// );
     

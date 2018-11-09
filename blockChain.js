@@ -2,6 +2,7 @@
 |  Learn more: Crypto-js: https://github.com/brix/crypto-js  |
 |  =========================================================*/
 const SHA256 = require('crypto-js/sha256');
+const assert = require('assert');
 const Persistor = require('./blockStore.js')
 
 /* ===== Block Class ==============================
@@ -18,7 +19,8 @@ class Block{
   }
 
   static fromBlob(blob) {
-    return JSON.parse(JSON.stringify(blob));
+    // return JSON.parse(JSON.stringify(blob));
+    return blob;
   }
 
 	constructor(data){
@@ -27,6 +29,10 @@ class Block{
     this.height = null;
     this.previousBlockHash = null;
     this.hash = null;
+  }
+
+  toString() {
+    return JSON.stringify(this);
   }
 
   calculateHash() {
@@ -79,14 +85,14 @@ class BlockChain{
                 persistor.afterAddBlob(0, genesisBlock).then(
                   function(blob) {
                     console.info("Added 'Genesis Block': \n", blob);
-                    return persistor;
+                    resolve (persistor);
                   },
                   function(err) {
                     console.log(err);
                   });
               } else {
                 console.info("Database already exists. Skipping genesis block creation.");
-                return persistor;
+                resolve (persistor);
               }
             },
             function(err) {
@@ -102,19 +108,18 @@ class BlockChain{
     let self = this;
     return self.whenPersistorReady.then(
       function(persistor) {
-        console.info("Adding new block...");
         assert (persistor.getBlobCount() >= 1, "Blockchain has no Genesis Block!!");
 
         // Initializing necessary fields:
         newBlock.height = persistor.getBlobCount();
         newBlock.time = new Date().getTime().toString().slice(0,-3);
-        self.afterGetBestBlock().then(
+        return self.afterGetBestBlock().then(
           function(bestBlock) {
             newBlock.previousBlockHash = bestBlock.hash;
             newBlock.hash = newBlock.calculateHash();
     
             // Persist the block:            
-            return persistor.afterAddBlock(newBlock.height, newBlock).then(
+            return persistor.afterAddBlob(newBlock.height, newBlock).then(
               function(blob) {
                 return Block.fromBlob(blob);
               },
@@ -158,7 +163,7 @@ class BlockChain{
         if (blockHeight >= persistor.getBlobCount()) {
           throw "Invalid block height referenced";
         }
-        return this.store.afterGetBlock(blockHeight).then(
+        return persistor.afterGetBlob(blockHeight).then(
           function(blob) {
             return Block.fromBlob(blob);
           },
@@ -248,7 +253,11 @@ var blockChainTestComplete = BlockChain.afterCreateBlockChain("./chaindata1").th
             function(blob) {
               retrieved = Block.fromBlob(blob);
               console.log("Created block: ", retrieved)
-              if (--i) theLoop(i);
+              if (--i) {
+                return theLoop(i);
+              } else {
+                return;
+              }
             }
           );
       }, 100);
