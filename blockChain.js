@@ -19,8 +19,23 @@ class Block{
   }
 
   static fromBlob(blob) {
-    // return JSON.parse(JSON.stringify(blob));
-    return blob;
+    // console.log(">>>: ", blob);
+    var block = new Block("");
+    JSON.parse(blob, function(field, value) {
+      if (field=='body') {
+        block.body = value;
+      } else if (field=='time') {
+        block.time = value;
+      } else if (field=='height') {
+        block.height = value;
+      } else if (field=='previousBlockHash') {
+        block.previousBlockHash = value;
+      } else if (field=='hash') {
+        block.hash = value;
+      } // else {
+    });
+    // console.log("<<< ", block);
+    return block;
   }
 
 	constructor(data){
@@ -163,6 +178,7 @@ class BlockChain{
     return self.whenPersistorReady.then(
       function(persistor) {
         if (blockHeight >= persistor.getBlobCount()) {
+          console.log("Invalid block height being queried");
           throw "Invalid block height referenced";
         }
         return persistor.afterGetBlob(blockHeight).then(

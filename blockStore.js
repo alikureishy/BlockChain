@@ -57,10 +57,8 @@ class Persistor {
             function(resolve, reject) {
                 self.db.get(key, function(err, value) {
                     if(err) {
-                        if (err) {
-                            console.log('Blob ' + key + ' get() failed', err);
-                            reject(err);
-                        }
+                        console.log('Blob ' + key + ' get() failed', err);
+                        reject(err);
                     } else {
                         resolve(value);
                     }

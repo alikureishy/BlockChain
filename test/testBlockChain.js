@@ -29,7 +29,8 @@ describe('testChainInitialization', function () {
 
     // 1. ARRANGE:
     var folder = "./test1";
-    fs.remove(folder, function() {console.log("Preparing clean test workspace...")});
+    fs.removeSync(folder);
+    console.log("Prepared clean test workspace...");
     // rimraf(folder, function() { console.log("Preparing clean test workspace...")});
 
     // 2. ACT:
@@ -42,7 +43,7 @@ describe('testChainInitialization', function () {
           (block) => {
             expect(block.body).to.be.equal("Genesis Block");
             expect(block.previousBlockHash).to.be.equal("");
-            expect(block.hash).to.be.equal("794680ebd70b62461f06aec0848add1a31dc9df303e81c8ad0319afc8a1eaf76");
+            expect(block.hash).to.be.equal(block.calculateHash());
           },
           (err) => {
             assert.fail(err);
@@ -64,8 +65,9 @@ describe('testChainGrowth()', function () {
 
     // 1. ARRANGE
     var folder = "./test2";
-    fs.remove(folder, function() {console.log("Preparing clean test workspace...")});
-    
+    fs.removeSync(folder);
+    console.log("Prepared clean test workspace...");
+
     // 2. ACT & ASSERT    
     let NUM_BLOCKS_TO_ADD = 10;
     return expect(BlockChain.afterCreateBlockChain(folder).then(
@@ -90,12 +92,12 @@ describe('testChainGrowth()', function () {
             // Create a list of blocks:
             (function recurse (i, j, previousBlock) {
               setTimeout(function () {
-                  let toAdd = new Block("Test Block - " + (i+1));
+                  let toAdd = new Block("Test Block - " + (originalCount + i));
                   return blockChain.afterAddBlock(toAdd).then(
                     (retrieved) => {
                       // Verify that the remaining fields of the block were set appropriately:
                       expect(retrieved.height).to.be.equal(originalCount + i);
-                      expect(retrieved.data).to.be.equal("Test Block - " + (originalCount + i + 1));
+                      expect(retrieved.body).to.be.equal("Test Block - " + (originalCount + i));
                       expect(retrieved.previousBlockHash).to.be.equal(previousBlock.hash);
                       expect(retrieved.hash).to.be.equal(retrieved.calculateHash());
                       return (retrieved);
@@ -105,7 +107,11 @@ describe('testChainGrowth()', function () {
                       // Retrieve the same block and verify they're the same:
                       return blockChain.afterGetBlock(retrieved.height).then(
                         (blockToVerify) => {
-                          expect(retrieved).to.be.equal(blockToVerify);
+                          expect(retrieved.height).to.be.equal(blockToVerify.height);
+                          expect(retrieved.body).to.be.equal(blockToVerify.body);
+                          expect(retrieved.time).to.be.equal(blockToVerify.time);
+                          expect(retrieved.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
+                          expect(retrieved.hash).to.be.equal(blockToVerify.calculateHash());
                           return retrieved;
                         }
                       )
@@ -114,7 +120,7 @@ describe('testChainGrowth()', function () {
                     (retrieved) => {
                       // Check the latest count
                       return blockChain.afterGetBlockCount().then(
-                        (runingCount) => {
+                        (runningCount) => {
                           expect(runningCount).to.be.equal(originalCount+i+1);
                           if (++i < j) {
                             return recurse(i, j, retrieved);
