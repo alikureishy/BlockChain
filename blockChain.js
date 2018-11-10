@@ -178,8 +178,8 @@ class BlockChain{
     return self.whenPersistorReady.then(
       function(persistor) {
         if (blockHeight >= persistor.getBlobCount()) {
-          console.log("Invalid block height being queried");
-          throw "Invalid block height referenced";
+          console.log("Invalid block height being queried: ", blockHeight);
+          throw "Invalid block height referenced " + blockHeight;
         }
         return persistor.afterGetBlob(blockHeight).then(
           function(blob) {
@@ -235,21 +235,30 @@ class BlockChain{
   afterGetInvalidBlocks() {
     let self = this;
     return self.whenPersistorReady.then(
-      function(persistor) {
+      (persistor) => {
         let hashErrors = [];
         let linkErrors = [];
-        for (var i = 0; i < persistor.getBlobCount()-1; i++) {
+        let promises = [];
+        for (let i = 0; i < persistor.getBlobCount()-1; i++) {
           // First validate block hash itafter:
-          let block = this.afterGetBlock(i);
-          if (!block.isValid()) {
-            hashErrors.push(i);
-          }
-
-          // Next validate the back pointer from the next block:
-          let nextBlock = this.afterGetBlock(i+1);
-          if (!block.isPrecursorTo(nextBlock)) {
-            linkErrors.push(i);
-          }
+          self.afterGetBlock(i).then(
+            (block) => {
+              if (!block.validate()) {
+                hashErrors.push(i);
+              }
+            }
+          ).then(
+            () => {
+              return self.afterGetBlock(i+1).then(
+                // Next validate the back pointer from the next block:
+                (nextBlock) => {
+                  if (!block.isPrecursorTo(nextBlock)) {
+                    linkErrors.push(i);
+                  }
+                }
+              )
+            }
+          );
         }
         return [hashErrors, linkErrors];
       },

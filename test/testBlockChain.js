@@ -60,7 +60,7 @@ describe('testChainInitialization', function () {
 });
 
 
-describe('testChainGrowth()', function () {
+describe('testChainGrowth', function () {
   it('should correctly add the sequence of blocks into the blockchain', function () {
 
     // 1. ARRANGE
@@ -68,7 +68,7 @@ describe('testChainGrowth()', function () {
     fs.removeSync(folder);
     console.log("Prepared clean test workspace...");
 
-    // 2. ACT & ASSERT    
+    // 2. ACT & ASSERT
     let NUM_BLOCKS_TO_ADD = 10;
     return expect(BlockChain.afterCreateBlockChain(folder).then(
       (blockChain) => {
@@ -146,8 +146,153 @@ describe('testChainGrowth()', function () {
   });
 });
 
-describe('testAddingGettingAndCounting()', function () {
-  it('should add the sequence of blocks into the db', function () {
+describe('testChainValidation', function () {
+  it('should detect when a chain is valid and invalid (including the blocks that are invalid)', function () {
+     // 1. ARRANGE
+    var folder = "./test3";
+    fs.removeSync(folder);
+    console.log("Prepared clean test workspace...");
     
-  });
-});
+    var eqSet = function (as, bs) {
+      if (as.size !== bs.size) return false;
+      for (var a of as) if (!bs.has(a)) return false;
+      return true;
+    };
+
+    let NUM_BLOCKS_TO_ADD = 9; // WIll yield 20 blocks total (including genesis block)
+    var BLOCKS_ADDED = Array();
+
+    // 2. ACT & ASSERT
+    return expect(BlockChain.afterCreateBlockChain(folder).then(
+      (blockChain) => {
+        // First get the genesis block:
+        return blockChain.afterGetBlock(0).then (
+          (genesisBlock) => {
+            assert (genesisBlock instanceof Block);
+            BLOCKS_ADDED.push(genesisBlock);
+            return blockChain;
+          }
+        );
+      }
+    ).then(
+      (blockChain) => {
+        return new Promise((resolve, reject) => {return ((function recurse (i, j) {
+          setTimeout(function () {
+              let toAdd = new Block("Test Block - " + (i + 1));
+              blockChain.afterAddBlock(toAdd).then(
+                (retrieved) => {
+                  console.log("BLock count: ", BLOCKS_ADDED.length);
+                  assert(retrieved instanceof Block);
+                  BLOCKS_ADDED.push(retrieved);
+                  assert (retrieved.height == BLOCKS_ADDED.length - 1);
+                  // Check the latest count
+                  if (++i < j) {
+                    return recurse(i, j);
+                  } else {
+                    resolve(blockChain);
+                  }
+                }
+              )
+          }, 100);
+        })(0, NUM_BLOCKS_TO_ADD));
+      })}
+    ).then(
+      (blockChain) => {
+        // Verify that the chain is valid:
+        return blockChain.afterGetInvalidBlocks().then(
+          ([hashErrors, linkErrors]) => {
+            expect(hashErrors.length).to.be.equal(0);
+            expect(linkErrors.length).to.be.equal(0);
+            return blockChain;
+          }
+        )
+      }
+    ).then(
+      (blockChain) => {
+        // Dirty blocks 2, 4 and 7:
+        return blockChain.whenPersistorReady.then(
+          (persistor) => {
+            // Edit block # 2:
+            expect(BLOCKS_ADDED.length).to.be.equal(NUM_BLOCKS_TO_ADD+1);
+            var blockToEdit = BLOCKS_ADDED[2];
+            blockToEdit.body = "Inducted chain error";
+            blockToEdit.previousBlockHash = "Induced link error";
+            return persistor.afterAddBlob(blockToEdit.height, blockToEdit).then(
+              (blobCount) => {
+                expect(blobCount).to.be.equal(persistor.getBlobCount());
+                return persistor;
+              }
+            );
+          }
+        ).then(
+          (persistor) => {
+            // Edit block # 2:
+            var blockToEdit = BLOCKS_ADDED[4];
+            blockToEdit.body = "Inducted chain error";
+            blockToEdit.previousBlockHash = "Induced link error";
+            return persistor.afterAddBlob(blockToEdit.height, blockToEdit).then(
+              (blobCount) => {
+                expect(blobCount).to.be.equal(persistor.getBlobCount());
+                return persistor;
+              }
+            );
+          }
+        ).then(
+          (persistor) => {
+            // Edit block # 2:
+            var blockToEdit = BLOCKS_ADDED[7];
+            blockToEdit.body = "Inducted chain error";
+            blockToEdit.previousBlockHash = "Induced link error";
+            return persistor.afterAddBlob(blockToEdit.height, blockToEdit).then(
+              (blobCount) => {
+                expect(blobCount).to.be.equal(persistor.getBlobCount());
+                return persistor;
+              }
+            );
+          }
+        ).then(
+          (persistor) => {
+            return blockChain;
+          }
+        );
+      }
+    ).then(
+      (blockChain) => {
+        return blockChain.afterGetInvalidBlocks().then(
+          ([hashErrors, linkErrors]) => {
+            expect(hashErrors.length).to.be.equal(3);
+            expect(linkErrors.length).to.be.equal(3);
+          }
+        )
+      }
+    ).then(
+      (blockchain) => {
+        return 'done'; // blockchain.afterShutdown();
+      }
+    )).to.eventually.equal('done');
+   });
+ });
+
+    // var randomizer = function getRandomInt(max) {
+    //   return Math.floor(Math.random() * Math.floor(max));
+    // }
+    // let POSSIBLE_OPERATIONS = ['height', 'body', 'time', 'previousBlockHash', 'hash'];
+    // let DIRTY_COUNT = randomizer(20);
+    // let BLOCKS_TO_DIRTY = [DIRTY_COUNT];
+    // let HOW_TO_DIRTY = [DIRTY_COUNT];
+    // let EXPECTED_HASH_ERRORS = new Set();
+    // let EXPECTED_LINK_ERRORS = new Set();
+    // for (let i = 0; i < DIRTY_COUNT; i++) {
+    //   BLOCKS_TO_DIRTY[i] = randomizer(NUM_BLOCKS_TO_ADD);
+    //   HOW_TO_DIRTY[i] = randomizer(POSSIBLE_OPERATIONS.length);
+    //   EXPECTED_HASH_ERRORS.add(i);
+    //   if (HOW_TO_DIRTY[i]=='hash' || HOW_TO_DIRTY[i]=='previousBlockHash') {
+    //     EXPECTED_LINK_ERRORS.add(i);
+    //   }
+    // }
+    // console.log("Blocks to add: ", NUM_BLOCKS_TO_ADD);
+    // console.log("Dirty count: ", DIRTY_COUNT);
+    // console.log("Blocks to dirty: ", BLOCKS_TO_DIRTY);
+    // console.log("How to dirty: ", HOW_TO_DIRTY);
+    // console.log("Expected hash errors: ", EXPECTED_HASH_ERRORS);
+    // console.log("Expected link errors: ", EXPECTED_LINK_ERRORS);
