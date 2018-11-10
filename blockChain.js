@@ -80,19 +80,19 @@ class BlockChain{
           Persistor.afterCreatePersistor(folder).then(
             function(persistor) {
               if (persistor.getBlobCount()==0) {
-                console.info("Initializing empty database...");
+                // console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
                 persistor.afterAddBlob(0, genesisBlock).then(
                   function(blockCount) {
-                    console.info("Added 'Genesis Block': \n", genesisBlock);
-                    console.info("--> Total size of chain: \n", blockCount);
+                    // console.info("Added 'Genesis Block': \n", genesisBlock);
+                    // console.info("--> Total size of chain: \n", blockCount);
                     resolve (persistor);
                   },
                   function(err) {
                     console.log(err);
                   });
               } else {
-                console.info("Database already exists. Skipping genesis block creation.");
+                // console.info("Database already exists. Skipping genesis block creation.");
                 resolve (persistor);
               }
             },
@@ -122,7 +122,7 @@ class BlockChain{
             // Persist the block:            
             return persistor.afterAddBlob(newBlock.height, newBlock).then(
               function(blockCount) {
-                assert (blockCount = newBlock.height + 1); // The height and actual block count should be in lock-step
+                assert (blockCount == newBlock.height + 1); // The height and actual block count should be in lock-step
                 return newBlock;
               },
               function(err) {
@@ -146,7 +146,7 @@ class BlockChain{
     return self.whenPersistorReady.then(
       function(persistor) {
         if (persistor.getBlobCount() == 0) {
-          return null;
+          Promise.reject('Chain has zero blocks');
         } else {
           return self.afterGetBlock(persistor.getBlobCount()-1);
         }
@@ -242,6 +242,15 @@ class BlockChain{
       }
     );
   }
+
+  afterShutdown() {
+    let self = this;
+    return self.whenPersistorReady.then(
+      (persistor) => {
+        return persistor.shutdown();
+      }
+    )
+  }
 }
 
 module.exports = {
@@ -249,35 +258,3 @@ module.exports = {
   BlockChain : BlockChain
 }
 
-console.log("====== Test BlockChain :: AddBlock ======");
-var blockChainTestComplete = BlockChain.afterCreateBlockChain("./chaindata1").then(
-  function(blockChain) {
-    blockChain.afterGetBlockCount().then(
-      function(blockCount) {
-        (function recurse (i, j) {
-          setTimeout(function () {
-              let toAdd = new Block("Test Block - " + i);
-              return blockChain.afterAddBlock(toAdd).then(
-                function(retrieved) {
-                  console.log(">>> Added Block: \n", retrieved);
-                  console.log("-----> New size of chain: ", ++blockCount);
-                  if (++i < j) {
-                    return recurse(i, j);
-                  } else {
-                    console.log("Reached the tail of the recursion");
-                    return;
-                  }
-                }
-              );
-          }, 100);
-        })(0, 10);
-      }
-    );
-  }
-);
-console.log(blockChainTestComplete);
-blockChainTestComplete.then(
-  function() {
-      console.log("====== BlockChain DONE!! ======");
-  }
-);

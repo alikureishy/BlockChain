@@ -17,11 +17,11 @@ class Persistor {
                 var persistor = new Persistor(folder);
                 return new Promise(
                     function(resolve, reject) {
-                        console.log("Existing DB Contents::::");
+                        // console.log("Existing DB Contents::::");
                         var counter = 0;
                         persistor.db.createReadStream()
                         .on('data', function(data) {
-                            console.log(">>>>", data);
+                            // console.log(">>>>", data);
                             counter++;
                         }).on('error', function(err) {
                             console.log(err);
@@ -57,10 +57,8 @@ class Persistor {
             function(resolve, reject) {
                 self.db.get(key, function(err, value) {
                     if(err) {
-                        if (err.type == 'NotFoundError') {
-                            resolve(undefined);
-                        } else {
-                            console.log('Blob ' + key + ' get failed', err);
+                        if (err) {
+                            console.log('Blob ' + key + ' get() failed', err);
                             reject(err);
                         }
                     } else {
@@ -103,6 +101,12 @@ class Persistor {
     getBlobCount() {
         let self = this;
         return self.blobCount;
+    }
+
+    shutdown() {
+        let self = this;
+        self.db.close();
+        return 'done';
     }
 }
 
