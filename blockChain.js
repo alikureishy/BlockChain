@@ -3,7 +3,7 @@
 |  =========================================================*/
 const SHA256 = require('crypto-js/sha256');
 const assert = require('assert');
-const Persistor = require('./blockStore.js')
+const Persistor = require('./blockStore.js').Persistor;
 
 /* ===== Block Class ==============================
 |  Class with a constructor for block 			   |
@@ -83,8 +83,9 @@ class BlockChain{
                 console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
                 persistor.afterAddBlob(0, genesisBlock).then(
-                  function(blob) {
-                    console.info("Added 'Genesis Block': \n", blob);
+                  function(blockCount) {
+                    console.info("Added 'Genesis Block': \n", genesisBlock);
+                    console.info("--> Total size of chain: \n", blockCount);
                     resolve (persistor);
                   },
                   function(err) {
@@ -120,8 +121,9 @@ class BlockChain{
     
             // Persist the block:            
             return persistor.afterAddBlob(newBlock.height, newBlock).then(
-              function(blob) {
-                return Block.fromBlob(blob);
+              function(blockCount) {
+                assert (blockCount = newBlock.height + 1); // The height and actual block count should be in lock-step
+                return newBlock;
               },
               function(err) {
                 console.log(err);
@@ -242,26 +244,35 @@ class BlockChain{
   }
 }
 
-console.log("====== BlockChain Tests ======");
+module.exports = {
+  Block : Block,
+  BlockChain : BlockChain
+}
+
+console.log("====== Test BlockChain :: AddBlock ======");
 var blockChainTestComplete = BlockChain.afterCreateBlockChain("./chaindata1").then(
   function(blockChain) {
-    console.log("Entering loop...");
-    (function theLoop (i) {
-      setTimeout(function () {
-          let toAdd = new Block("Test Block - " + (i - 1));
-          return blockChain.afterAddBlock(toAdd).then(
-            function(blob) {
-              retrieved = Block.fromBlob(blob);
-              console.log("Created block: ", retrieved)
-              if (--i) {
-                return theLoop(i);
-              } else {
-                return;
-              }
-            }
-          );
-      }, 100);
-    })(10);
+    blockChain.afterGetBlockCount().then(
+      function(blockCount) {
+        (function recurse (i, j) {
+          setTimeout(function () {
+              let toAdd = new Block("Test Block - " + i);
+              return blockChain.afterAddBlock(toAdd).then(
+                function(retrieved) {
+                  console.log(">>> Added Block: \n", retrieved);
+                  console.log("-----> New size of chain: ", ++blockCount);
+                  if (++i < j) {
+                    return recurse(i, j);
+                  } else {
+                    console.log("Reached the tail of the recursion");
+                    return;
+                  }
+                }
+              );
+          }, 100);
+        })(0, 10);
+      }
+    );
   }
 );
 console.log(blockChainTestComplete);

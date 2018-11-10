@@ -15,11 +15,13 @@ class Persistor {
         return new Promise(
             function(resolve, reject) {
                 var persistor = new Persistor(folder);
-                var counterPromise = new Promise(
+                return new Promise(
                     function(resolve, reject) {
+                        console.log("Existing DB Contents::::");
                         var counter = 0;
                         persistor.db.createReadStream()
                         .on('data', function(data) {
+                            console.log(">>>>", data);
                             counter++;
                         }).on('error', function(err) {
                             console.log(err);
@@ -79,23 +81,23 @@ class Persistor {
                     reject(err);
                 }
                 self.blobCount = self.blobCount + 1;
-                resolve(blob);
+                resolve(self.blobCount);
             });
         });
     }
 
-    // Add data to levelDB with value
-    afterAppendBlob(blob) {
-        let self = this;
-        return self.afterAddBlob(this.blobCount, blob).then (
-            function(addedBlob) {
-                return self.blobCount++;
-            },
-            function(err) {
-                console.log(err);
-            }
-        );
-    }
+    // // Add data to levelDB with value
+    // afterAppendBlob(blob) {
+    //     let self = this;
+    //     return self.afterAddBlob(this.blobCount, blob).then (
+    //         function(addedBlob) {
+    //             return self.blobCount;
+    //         },
+    //         function(err) {
+    //             console.log(err);
+    //         }
+    //     );
+    // }
 
   	// Implement this method
     getBlobCount() {
@@ -104,9 +106,11 @@ class Persistor {
     }
 }
 
-// Export the class
-module.exports = Persistor;
-
+// // Export the class
+module.exports = {
+    Persistor : Persistor
+}
+  
 /* ===== Testing ==============================================================|
 |  - Self-invoking function to add blobs to chain                             |
 |  - Learn more:                                                               |
@@ -124,23 +128,29 @@ module.exports = Persistor;
 //     Persistor.afterCreatePersistor("./chaindata2").then(
 //         function(persistor) {
 //             console.log("Total blocks: ", persistor.blobCount);
-//             (function theLoop (i) {
+//             let initialCount = persistor.blobCount;
+//             (function recurse (i, j) {      // Recurse from i to j (exclusive), in sequence
 //                 // console.log("Recursing:", i);
 //                 setTimeout(function () {
-//                     persistor.afterAppendBlob('Dummy blob').then(
-//                         function(blobHeight) {
-//                             console.log('Added blob #' + blobHeight);
-//                             if (--i) theLoop(i);
+//                     persistor.afterAddBlob(i+initialCount, 'Dummy blob').then(
+//                         function(blobCount) {
+//                             console.log('--> New size: ', blobCount);
+//                             if (++i < j) {
+//                                 return recurse(i, j);
+//                             } else {
+//                                 console.log("Reached tail of recursive stack");
+//                                 return;
+//                             }
 //                         },
 //                         function(err) {
 //                             console.log(err);
 //                         }
 //                     );
 //                 }, 100);
-//             })(10);
+//             })(0, 10);
 //         }
 //     );
-// console.log(storageTestComplete);
+// // console.log(storageTestComplete);
 // storageTestComplete.then(
 //     function() {
 //         console.log("====== Persistor DONE!! ======");
