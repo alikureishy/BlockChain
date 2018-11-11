@@ -121,19 +121,6 @@ class Persistor {
         });
     }
 
-    // // Add data to levelDB with value
-    // afterAppendBlob(blob) {
-    //     let self = this;
-    //     return self.afterAddBlob(this.blobCount, blob).then (
-    //         function(addedBlob) {
-    //             return self.blobCount;
-    //         },
-    //         function(err) {
-    //             console.log(err);
-    //         }
-    //     );
-    // }
-
   	// Implement this method
     getBlobCount() {
         let self = this;
