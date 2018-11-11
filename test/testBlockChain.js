@@ -28,7 +28,7 @@ describe('testChainInitialization', function () {
   it('should have a genesis block as the first block in the chain', function () {
 
     // 1. ARRANGE:
-    var folder = "./test1";
+    var folder = "./chaindata1";
     fs.removeSync(folder);
     console.log("Prepared clean test workspace...");
     // rimraf(folder, function() { console.log("Preparing clean test workspace...")});
@@ -64,7 +64,7 @@ describe('testChainGrowth', function () {
   it('should correctly add the sequence of blocks into the blockchain', function () {
 
     // 1. ARRANGE
-    var folder = "./test2";
+    var folder = "./chaindata2";
     fs.removeSync(folder);
     console.log("Prepared clean test workspace...");
 
@@ -149,36 +149,27 @@ describe('testChainGrowth', function () {
 describe('testChainValidation', function () {
   it('should detect when a chain is valid and invalid (including the blocks that are invalid)', function () {
      // 1. ARRANGE
-    var folder = "./test3";
+    var folder = "./chaindata3";
     fs.removeSync(folder);
     console.log("Prepared clean test workspace...");
     
-    var eqSet = function (as, bs) {
-      if (as.size !== bs.size) return false;
-      for (var a of as) if (!bs.has(a)) return false;
-      return true;
-    };
-
     let NUM_BLOCKS_TO_ADD = 9; // WIll yield 20 blocks total (including genesis block)
     var BLOCKS_ADDED = Array();
 
     // 2. ACT & ASSERT
     return expect(BlockChain.afterCreateBlockChain(folder).then(
       (blockChain) => {
-        console.log(">> 1");
         // First get the genesis block:
         return blockChain.afterGetBlock(0).then (
           (genesisBlock) => {
             assert (genesisBlock instanceof Block);
             BLOCKS_ADDED.push(genesisBlock);
-            console.log("<< 1");
             return blockChain;
           }
         );
       }
     ).then(
       (blockChain) => {
-        console.log(">> 2");
         return new Promise((resolve, reject) => {return ((function recurse (i, j) {
           setTimeout(function () {
               let toAdd = new Block("Test Block - " + (i + 1));
@@ -192,7 +183,6 @@ describe('testChainValidation', function () {
                   if (++i < j) {
                     return recurse(i, j);
                   } else {
-                    console.log("<< 2");
                     resolve(blockChain);
                   }
                 }
@@ -203,12 +193,10 @@ describe('testChainValidation', function () {
     ).then(
       (blockChain) => {
         // Verify that the chain is valid:
-        console.log(">> 3");
         return blockChain.afterGetInvalidBlocks().then(
           ([hashErrors, linkErrors]) => {
             expect(hashErrors.length).to.be.equal(0);
             expect(linkErrors.length).to.be.equal(0);
-            console.log("<< 3");
             return blockChain;
           }
         )
@@ -216,11 +204,9 @@ describe('testChainValidation', function () {
     ).then(
       (blockChain) => {
         // Dirty blocks 2, 4 and 7:
-        console.log(">> 4");
         return blockChain.whenPersistorReady.then(
           (persistor) => {
             // Edit block # 2:
-            console.log(">> 4.1");
             expect(BLOCKS_ADDED.length).to.be.equal(NUM_BLOCKS_TO_ADD+1);
             var blockToEdit = BLOCKS_ADDED[2];
             blockToEdit.body = "Inducted chain error";
@@ -236,7 +222,6 @@ describe('testChainValidation', function () {
                     expect(blockToEdit.time).to.be.equal(blockToVerify.time);
                     expect(blockToEdit.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
                     expect(blockToEdit.hash).to.be.not.equal(blockToVerify.calculateHash());
-                    console.log("<< 4.1");
                     return persistor;
                   }
                 );
@@ -246,7 +231,6 @@ describe('testChainValidation', function () {
         ).then(
           (persistor) => {
             // Edit block # 2:
-            console.log(">> 4.2");
             var blockToEdit = BLOCKS_ADDED[4];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
@@ -261,7 +245,6 @@ describe('testChainValidation', function () {
                     expect(blockToEdit.time).to.be.equal(blockToVerify.time);
                     expect(blockToEdit.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
                     expect(blockToEdit.hash).to.be.not.equal(blockToVerify.calculateHash());
-                    console.log("<< 4.2");
                     return persistor;
                   }
                 );
@@ -271,7 +254,6 @@ describe('testChainValidation', function () {
         ).then(
           (persistor) => {
             // Edit block # 2:
-            console.log(">> 4.3");
             var blockToEdit = BLOCKS_ADDED[7];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
@@ -286,7 +268,6 @@ describe('testChainValidation', function () {
                     expect(blockToEdit.time).to.be.equal(blockToVerify.time);
                     expect(blockToEdit.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
                     expect(blockToEdit.hash).to.be.not.equal(blockToVerify.calculateHash());
-                    console.log("<< 4.3");
                     return persistor;
                   }
                 );
@@ -295,23 +276,20 @@ describe('testChainValidation', function () {
           }
         ).then(
           (persistor) => {
-            return persistor.printBlobs().then(
-              () => {
-                console.log("<< 4");
+            // return persistor.printBlobs().then(
+            //   () => {
                 return blockChain;
-              }
-            )
+              // }
+            // )
           }
         );
       }
     ).then(
       (blockChain) => {
-        console.log(">> 5");
         return blockChain.afterGetInvalidBlocks().then(
           ([hashErrors, linkErrors]) => {
             expect(hashErrors.length).to.be.equal(3);
             expect(linkErrors.length).to.be.equal(3);
-            console.log("<< 5");
           }
         )
       }
@@ -323,6 +301,11 @@ describe('testChainValidation', function () {
    });
  });
 
+    // var eqSet = function (as, bs) {
+    //   if (as.size !== bs.size) return false;
+    //   for (var a of as) if (!bs.has(a)) return false;
+    //   return true;
+    // }
     // var randomizer = function getRandomInt(max) {
     //   return Math.floor(Math.random() * Math.floor(max));
     // }

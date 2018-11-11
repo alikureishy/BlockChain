@@ -62,11 +62,11 @@ class Block{
   }
 
   validate() {
-    return (this.hash===this.calculateHash());
+    return (this.hash == this.calculateHash());
   }
 
   isPrecursorTo(nextBlock) {
-    return (this.hash === nextBlock.previousBlockHash);
+    return (this.hash == nextBlock.previousBlockHash);
   }
 }
 
@@ -236,37 +236,56 @@ class BlockChain{
     let self = this;
     return self.whenPersistorReady.then(
       (persistor) => {
-        let hashErrors = [];
-        let linkErrors = [];
-        console.log("###Blob count>>", persistor.getBlobCount());
+        let promises = [];
         for (let i = 0; i < persistor.getBlobCount(); i++) {
           // First validate block hash itafter:
-          self.afterGetBlock(i).then(
-            (block) => {
-              console.log("###>>>", i, block);
-              if (!block.validate()) {
-                hashErrors.push(i);
+          promises.push(
+            self.afterGetBlock(i).then(
+              (block) => {
+                let hasHashError = false;
+                if (!block.validate()) {
+                  hasHashError = true;
+                }
+                return [block, hasHashError];
               }
-          //   }
-          // ).then(
-          //   () => {
-              if (i < persistor.getBlobCount()-1) {
-                return self.afterGetBlock(i+1).then(
-                  // Next validate the back pointer from the next block:
-                  (nextBlock) => {
-                    if (!block.isPrecursorTo(nextBlock)) {
-                      linkErrors.push(i);
+            ).then(
+              ([block, hasHashError]) => {
+                let hasLinkError = false;
+                if (i == persistor.getBlobCount()-1) {
+                  return [hasHashError, hasLinkError];
+                }
+                else {
+                  // Validate the back pointer from the next block:
+                  return self.afterGetBlock(i+1).then(
+                    (nextBlock) => {
+                      if (!block.isPrecursorTo(nextBlock)) {
+                        hasLinkError=true;
+                      }
+                      return [hasHashError, hasLinkError];
                     }
-                    return;
-                  }
-                )
-              } else {
-                return;
+                  )
+                }
               }
-            }
+            )
           );
         }
-        return [hashErrors, linkErrors];
+        return Promise.all(promises).then(
+          (listOfTuples) => {
+            let hashErrors = [];
+            let linkErrors = [];
+            assert (listOfTuples.length == persistor.getBlobCount());
+            for (let i = 0; i<listOfTuples.length; i++) {
+              let tuple = listOfTuples[i];
+              if (tuple[0]) {
+                hashErrors.push(i);
+              }
+              if (tuple[1]) {
+                linkErrors.push(i);
+              }
+            }
+            return [hashErrors, linkErrors];
+          }
+        );
       },
       function(err) {
         console.log(err);
