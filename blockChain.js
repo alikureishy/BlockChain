@@ -238,25 +238,31 @@ class BlockChain{
       (persistor) => {
         let hashErrors = [];
         let linkErrors = [];
-        let promises = [];
-        for (let i = 0; i < persistor.getBlobCount()-1; i++) {
+        console.log("###Blob count>>", persistor.getBlobCount());
+        for (let i = 0; i < persistor.getBlobCount(); i++) {
           // First validate block hash itafter:
           self.afterGetBlock(i).then(
             (block) => {
+              console.log("###>>>", i, block);
               if (!block.validate()) {
                 hashErrors.push(i);
               }
-            }
-          ).then(
-            () => {
-              return self.afterGetBlock(i+1).then(
-                // Next validate the back pointer from the next block:
-                (nextBlock) => {
-                  if (!block.isPrecursorTo(nextBlock)) {
-                    linkErrors.push(i);
+          //   }
+          // ).then(
+          //   () => {
+              if (i < persistor.getBlobCount()-1) {
+                return self.afterGetBlock(i+1).then(
+                  // Next validate the back pointer from the next block:
+                  (nextBlock) => {
+                    if (!block.isPrecursorTo(nextBlock)) {
+                      linkErrors.push(i);
+                    }
+                    return;
                   }
-                }
-              )
+                )
+              } else {
+                return;
+              }
             }
           );
         }

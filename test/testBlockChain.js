@@ -165,17 +165,20 @@ describe('testChainValidation', function () {
     // 2. ACT & ASSERT
     return expect(BlockChain.afterCreateBlockChain(folder).then(
       (blockChain) => {
+        console.log(">> 1");
         // First get the genesis block:
         return blockChain.afterGetBlock(0).then (
           (genesisBlock) => {
             assert (genesisBlock instanceof Block);
             BLOCKS_ADDED.push(genesisBlock);
+            console.log("<< 1");
             return blockChain;
           }
         );
       }
     ).then(
       (blockChain) => {
+        console.log(">> 2");
         return new Promise((resolve, reject) => {return ((function recurse (i, j) {
           setTimeout(function () {
               let toAdd = new Block("Test Block - " + (i + 1));
@@ -189,6 +192,7 @@ describe('testChainValidation', function () {
                   if (++i < j) {
                     return recurse(i, j);
                   } else {
+                    console.log("<< 2");
                     resolve(blockChain);
                   }
                 }
@@ -199,10 +203,12 @@ describe('testChainValidation', function () {
     ).then(
       (blockChain) => {
         // Verify that the chain is valid:
+        console.log(">> 3");
         return blockChain.afterGetInvalidBlocks().then(
           ([hashErrors, linkErrors]) => {
             expect(hashErrors.length).to.be.equal(0);
             expect(linkErrors.length).to.be.equal(0);
+            console.log("<< 3");
             return blockChain;
           }
         )
@@ -210,58 +216,102 @@ describe('testChainValidation', function () {
     ).then(
       (blockChain) => {
         // Dirty blocks 2, 4 and 7:
+        console.log(">> 4");
         return blockChain.whenPersistorReady.then(
           (persistor) => {
             // Edit block # 2:
+            console.log(">> 4.1");
             expect(BLOCKS_ADDED.length).to.be.equal(NUM_BLOCKS_TO_ADD+1);
             var blockToEdit = BLOCKS_ADDED[2];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
-            return persistor.afterAddBlob(blockToEdit.height, blockToEdit).then(
+            return persistor.afterUpdateBlob(blockToEdit.height, blockToEdit).then(
               (blobCount) => {
-                expect(blobCount).to.be.equal(persistor.getBlobCount());
-                return persistor;
+                expect(BLOCKS_ADDED.length).to.be.equal(blobCount);
+                return persistor.afterGetBlob(blockToEdit.height).then(
+                  (blob) => {
+                    let blockToVerify = Block.fromBlob(blob);
+                    expect(blockToEdit.height).to.be.equal(blockToVerify.height);
+                    expect(blockToEdit.body).to.be.equal(blockToVerify.body);
+                    expect(blockToEdit.time).to.be.equal(blockToVerify.time);
+                    expect(blockToEdit.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
+                    expect(blockToEdit.hash).to.be.not.equal(blockToVerify.calculateHash());
+                    console.log("<< 4.1");
+                    return persistor;
+                  }
+                );
               }
             );
           }
         ).then(
           (persistor) => {
             // Edit block # 2:
+            console.log(">> 4.2");
             var blockToEdit = BLOCKS_ADDED[4];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
-            return persistor.afterAddBlob(blockToEdit.height, blockToEdit).then(
+            return persistor.afterUpdateBlob(blockToEdit.height, blockToEdit).then(
               (blobCount) => {
-                expect(blobCount).to.be.equal(persistor.getBlobCount());
-                return persistor;
+                expect(BLOCKS_ADDED.length).to.be.equal(blobCount);
+                return persistor.afterGetBlob(blockToEdit.height).then(
+                  (blob) => {
+                    let blockToVerify = Block.fromBlob(blob);
+                    expect(blockToEdit.height).to.be.equal(blockToVerify.height);
+                    expect(blockToEdit.body).to.be.equal(blockToVerify.body);
+                    expect(blockToEdit.time).to.be.equal(blockToVerify.time);
+                    expect(blockToEdit.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
+                    expect(blockToEdit.hash).to.be.not.equal(blockToVerify.calculateHash());
+                    console.log("<< 4.2");
+                    return persistor;
+                  }
+                );
               }
             );
           }
         ).then(
           (persistor) => {
             // Edit block # 2:
+            console.log(">> 4.3");
             var blockToEdit = BLOCKS_ADDED[7];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
-            return persistor.afterAddBlob(blockToEdit.height, blockToEdit).then(
+            return persistor.afterUpdateBlob(blockToEdit.height, blockToEdit).then(
               (blobCount) => {
-                expect(blobCount).to.be.equal(persistor.getBlobCount());
-                return persistor;
+                expect(BLOCKS_ADDED.length).to.be.equal(blobCount);
+                return persistor.afterGetBlob(blockToEdit.height).then(
+                  (blob) => {
+                    let blockToVerify = Block.fromBlob(blob);
+                    expect(blockToEdit.height).to.be.equal(blockToVerify.height);
+                    expect(blockToEdit.body).to.be.equal(blockToVerify.body);
+                    expect(blockToEdit.time).to.be.equal(blockToVerify.time);
+                    expect(blockToEdit.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
+                    expect(blockToEdit.hash).to.be.not.equal(blockToVerify.calculateHash());
+                    console.log("<< 4.3");
+                    return persistor;
+                  }
+                );
               }
             );
           }
         ).then(
           (persistor) => {
-            return blockChain;
+            return persistor.printBlobs().then(
+              () => {
+                console.log("<< 4");
+                return blockChain;
+              }
+            )
           }
         );
       }
     ).then(
       (blockChain) => {
+        console.log(">> 5");
         return blockChain.afterGetInvalidBlocks().then(
           ([hashErrors, linkErrors]) => {
             expect(hashErrors.length).to.be.equal(3);
             expect(linkErrors.length).to.be.equal(3);
+            console.log("<< 5");
           }
         )
       }

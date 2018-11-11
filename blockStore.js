@@ -50,6 +50,24 @@ class Persistor {
         this.ensureInitialized = null;
     }
   
+    printBlobs() {
+        let self = this;
+        return new Promise(
+            function(resolve, reject) {
+                console.log("DB Contents::::");
+                var counter = 0;
+                self.db.createReadStream()
+                .on('data', function(data) {
+                    console.log(">>>>", data);
+                }).on('error', function(err) {
+                    console.log(err);
+                    reject(err);
+                }).on('close', function() {
+                    resolve();
+                });
+            }
+        );        
+    }
   	// Get data from levelDB with key (Promise)
   	afterGetBlob(key) {
         let self = this; // we will need 'after'' to be able to reference the current object inside the Promise constructor where a new 'this' comes into scope 
@@ -78,6 +96,27 @@ class Persistor {
                 }
                 self.blobCount = self.blobCount + 1;
                 resolve(self.blobCount);
+            });
+        });
+    }
+
+    afterUpdateBlob(key, blob) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            self.db.get(key, function(err, value) {
+                if (err) {
+                    console.log("Cannot update blob that doesn't exist", key);
+                    reject("Cannot update blob that doesn't exist: ", key);
+                } else {
+                    // Blob exists:
+                    self.db.put(key, blob, function(err) {
+                        if (err) {
+                            console.log('Blob ' + key + ' submission failed', err);
+                            reject(err);
+                        }
+                        resolve(self.blobCount);
+                    });
+                }
             });
         });
     }
