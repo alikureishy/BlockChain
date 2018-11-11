@@ -9,15 +9,28 @@ const assert = require('assert');
 // Importing the module 'level'
 const level = require('level');
 
-// Declaring a class
+/*  =========================================================
+    The Persistor class that wraps around leveldb providing
+    persistence API for the blockchain.
+    =========================================================*/
+
+/**
+ * 
+ */
 class Persistor {
+
+    /**
+     * Promise:
+     *      Factory method to initialize and return the persistor
+     *      instance.
+     * @param {string} folder 
+     */
     static afterCreatePersistor(folder) {
         return new Promise(
             function(resolve, reject) {
                 var persistor = new Persistor(folder);
                 return new Promise(
                     function(resolve, reject) {
-                        // console.log("Existing DB Contents::::");
                         var counter = 0;
                         persistor.db.createReadStream()
                         .on('data', function(data) {
@@ -43,13 +56,21 @@ class Persistor {
         );
     }
 
-	// Declaring the class constructor
+    /**
+     * Constructor -- should not be used directly
+     * @param {string} folder 
+     */
     constructor(folder) {
         this.db = level(folder);
         this.blobCount = 0;
         this.ensureInitialized = null;
     }
-  
+
+    /**
+     * Promise:
+     *      Prints the data stored in the leveldb (in the order in which
+     *      it was inserted)
+     */
     printBlobs() {
         let self = this;
         return new Promise(
@@ -68,9 +89,15 @@ class Persistor {
             }
         );        
     }
-  	// Get data from levelDB with key (Promise)
+
+    /**
+     * Promise:
+     *      Retrieve the object associated with the provided key (Promise).
+     * 
+     * @param {any} key 
+     */
   	afterGetBlob(key) {
-        let self = this; // we will need 'after'' to be able to reference the current object inside the Promise constructor where a new 'this' comes into scope 
+        let self = this;
         return new Promise(
             function(resolve, reject) {
                 self.db.get(key, function(err, value) {
@@ -85,7 +112,12 @@ class Persistor {
         );
     }
   
-  	// Add data to levelDB with key and value (Promise)
+    /**
+     * Promise:
+     *      Add data to levelDB with key and value (Promise)
+     * @param {any} key 
+     * @param {any} blob 
+     */
     afterAddBlob(key, blob) {
         let self = this;
         return new Promise(function(resolve, reject) {
@@ -100,6 +132,13 @@ class Persistor {
         });
     }
 
+    /**
+     * Promise:
+     *      Update the blob associated with the given key. This requires
+     *      that the key already exists in the db.
+     * @param {any} key 
+     * @param {any} blob 
+     */
     afterUpdateBlob(key, blob) {
         let self = this;
         return new Promise(function(resolve, reject) {
@@ -121,16 +160,13 @@ class Persistor {
         });
     }
 
-  	// Implement this method
+
+  	/**
+     *  Returns the count of the number of blobs in the db
+     */
     getBlobCount() {
         let self = this;
         return self.blobCount;
-    }
-
-    shutdown() {
-        let self = this;
-        self.db.close();
-        return 'done';
     }
 }
 
@@ -139,49 +175,3 @@ module.exports = {
     Persistor : Persistor
 }
   
-/* ===== Testing ==============================================================|
-|  - Self-invoking function to add blobs to chain                             |
-|  - Learn more:                                                               |
-|   https://scottiestech.info/2014/07/01/javascript-fun-looping-with-a-delay/  |
-|                                                                              |
-|  * 100 Milliseconds loop = 36,000 blobs per hour                            |
-|     (13.89 hours for 500,000 blobs)                                         |
-|    Bitcoin blobchain adds 8640 blobs per day                               |
-|     ( new blob every 10 minutes )                                           |
-|  ===========================================================================*/
-
-
-// console.log("====== Persistor Tests ======");
-// var storageTestComplete = 
-//     Persistor.afterCreatePersistor("./chaindata2").then(
-//         function(persistor) {
-//             console.log("Total blocks: ", persistor.blobCount);
-//             let initialCount = persistor.blobCount;
-//             (function recurse (i, j) {      // Recurse from i to j (exclusive), in sequence
-//                 // console.log("Recursing:", i);
-//                 setTimeout(function () {
-//                     persistor.afterAddBlob(i+initialCount, 'Dummy blob').then(
-//                         function(blobCount) {
-//                             console.log('--> New size: ', blobCount);
-//                             if (++i < j) {
-//                                 return recurse(i, j);
-//                             } else {
-//                                 console.log("Reached tail of recursive stack");
-//                                 return;
-//                             }
-//                         },
-//                         function(err) {
-//                             console.log(err);
-//                         }
-//                     );
-//                 }, 100);
-//             })(0, 10);
-//         }
-//     );
-// // console.log(storageTestComplete);
-// storageTestComplete.then(
-//     function() {
-//         console.log("====== Persistor DONE!! ======");
-//     }
-// );
-    

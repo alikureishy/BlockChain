@@ -9,8 +9,14 @@ const Persistor = require('./blockStore.js').Persistor;
 |  Class with a constructor for block 			   |
 |  ===============================================*/
 class Block{
-  static createGenesisBlock(data) {
-    var genesisBlock = new Block(data);
+
+  /**
+   * Returns a special Genesis block
+   * 
+   * @param {any} body 
+   */
+  static createGenesisBlock(body) {
+    var genesisBlock = new Block(body);
     genesisBlock.time = new Date().getTime().toString().slice(0,-3);
     genesisBlock.height = 0;
     genesisBlock.previousBlockHash = "";
@@ -18,8 +24,11 @@ class Block{
     return genesisBlock;
   }
 
+  /**
+   * Returns a Block instance from the provided blob
+   * @param {string} blob
+   */
   static fromBlob(blob) {
-    // console.log(">>>: ", blob);
     var block = new Block("");
     JSON.parse(blob, function(field, value) {
       if (field=='body') {
@@ -32,12 +41,15 @@ class Block{
         block.previousBlockHash = value;
       } else if (field=='hash') {
         block.hash = value;
-      } // else {
+      }
     });
-    // console.log("<<< ", block);
     return block;
   }
 
+  /**
+   * Constructor
+   * @param {string} data 
+   */
 	constructor(data){
     this.body = data;
     this.time = null;
@@ -46,10 +58,16 @@ class Block{
     this.hash = null;
   }
 
+  /**
+   * Returns the JSON string representation of this block
+   */
   toString() {
     return JSON.stringify(this);
   }
 
+  /**
+   * Recalculates the hash of the block (but does not change the block)
+   */
   calculateHash() {
     let blockHash = this.hash;
     this.hash = '';
@@ -61,10 +79,17 @@ class Block{
     return validBlockHash;
   }
 
+  /**
+   * Verifies the integrity of teh block
+   */
   validate() {
     return (this.hash == this.calculateHash());
   }
 
+  /**
+   * Verifies the integrity of the link between the present and next blocks
+   * @param {Block} nextBlock 
+   */
   isPrecursorTo(nextBlock) {
     return (this.hash == nextBlock.previousBlockHash);
   }
@@ -75,6 +100,12 @@ class Block{
 |  ================================================*/
 
 class BlockChain{
+
+  /**
+   * Promise:
+   *    Returns a blockchain instance
+   * @param {string} folder 
+   */
   static afterCreateBlockChain(folder) {
     let blockChain = new BlockChain(folder);
     return blockChain.whenPersistorReady.then(
@@ -87,6 +118,10 @@ class BlockChain{
     )
   }
 
+  /**
+   * Returns a blockchain instance (Do not use directly)
+   * @param {string} folder 
+   */
   constructor(folder){
     let self = this;
     self.whenPersistorReady = 
@@ -119,7 +154,12 @@ class BlockChain{
       );
   }
 
-  // Add new block
+  /**
+   * Promise:
+   *    Persists the new block and its link to the chain
+   *  
+   * @param {Block} newBlock 
+   */
   afterAddBlock(newBlock){
     let self = this;
     return self.whenPersistorReady.then(
@@ -156,6 +196,10 @@ class BlockChain{
     );
   }
 
+  /**
+   * Promise:
+   *    Returns the last block in the chain
+   */
   afterGetBestBlock() {
     let self = this;
     return self.whenPersistorReady.then(
@@ -172,7 +216,12 @@ class BlockChain{
     )
   }
 
-  // get block
+  /**
+   * Promise:
+   *    Returns the block at the given height
+   * 
+   * @param {int} blockHeight 
+   */
   afterGetBlock(blockHeight){
     let self = this;
     return self.whenPersistorReady.then(
@@ -193,6 +242,10 @@ class BlockChain{
     );
   }
 
+  /**
+   * Promise:
+   *    Returns the number of blocks in the chain
+   */
   afterGetBlockCount() {
     let self = this;
     return self.whenPersistorReady.then(
@@ -206,7 +259,11 @@ class BlockChain{
   }
 
 
-  // validate block
+  /**
+   * Promise:
+   *    Validates the block at the given height
+   * @param {int} blockHeight 
+   */
   afterAssertValidity(blockHeight) {
     let self = this;
     return self.whenPersistorReady.then(
@@ -231,7 +288,10 @@ class BlockChain{
     );
   }
 
-  // Validate blockchain
+  /**
+   * Promise:
+   *  Validates the entire blockchain
+   */
   afterGetInvalidBlocks() {
     let self = this;
     return self.whenPersistorReady.then(
@@ -291,15 +351,6 @@ class BlockChain{
         console.log(err);
       }
     );
-  }
-
-  afterShutdown() {
-    let self = this;
-    return self.whenPersistorReady.then(
-      (persistor) => {
-        return persistor.shutdown();
-      }
-    )
   }
 }
 

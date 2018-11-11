@@ -53,7 +53,7 @@ describe('testChainInitialization', function () {
       }
     ).then(
       (blockchain) => {
-        return 'done'; // blockchain.afterShutdown();
+        return 'done';
       }
     )).to.eventually.equal('done');
   });
