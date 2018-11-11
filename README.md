@@ -1,61 +1,32 @@
-# Blockchain Data
+# Blockchain
 
-Blockchain has the potential to change the way that the world approaches data. Develop Blockchain skills by understanding the data model behind Blockchain by developing your own simplified private blockchain.
+This is a work in progress. I will be gradually adding additional functionality to this project, culminating (ideally) in a fully functional blockchain implementation.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+Please follow these steps to launch/use this project.
 
 ### Prerequisites
 
 Installing Node and NPM is pretty straightforward using the installer package available from the (Node.js® web site)[https://nodejs.org/en/].
 
-### Configuring your project
+### Configuration
 
-- Use NPM to initialize your project and create package.json to store project dependencies.
+- Use NPM to initialize the project (package.json will ensure that all the relevant project dependencies are installed).
 ```
 npm init
-```
-- Install crypto-js with --save flag to save dependency to our package.json file
-```
-npm install crypto-js --save
-```
-- Install level with --save flag
-```
-npm install level --save
 ```
 
 ## Testing
 
-To test code:
-1: Open a command prompt or shell terminal after install node.js.
-2: Enter a node session, also known as REPL (Read-Evaluate-Print-Loop).
+Mocha (with Chai) has been used to build tests for this blockchain implementation. To invoke the tests, please run:
+
 ```
-node
+npm test
 ```
-3: Copy and paste your code into your node session
-4: Instantiate blockchain with blockchain variable
-```
-let blockchain = new Blockchain();
-```
-5: Generate 10 blocks using a for loop
-```
-for (var i = 0; i <= 10; i++) {
-  blockchain.addBlock(new Block("test data "+i));
-}
-```
-6: Validate blockchain
-```
-blockchain.validateChain();
-```
-7: Induce errors by changing block data
-```
-let inducedErrorBlocks = [2,4,7];
-for (var i = 0; i < inducedErrorBlocks.length; i++) {
-  blockchain.chain[inducedErrorBlocks[i]].data='induced chain error';
-}
-```
-8: Validate blockchain. The chain should now fail with blocks 2,4, and 7.
-```
-blockchain.validateChain();
-```
+
+The tests include:
+- Test of the hash calculation facility on the Block class
+- Test of the initialization of the blockchain with the genesis block
+- Test for the growth of the blockchain (sequence of block additions etc).
+- Test for checking the validity of the blockchain (both when valid and also after corrupting some blocks in the chain)
