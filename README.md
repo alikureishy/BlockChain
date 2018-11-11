@@ -1,8 +1,8 @@
 # Blockchain
 
-This is a work in progress. I will be gradually adding additional functionality to this project, culminating (ideally) in a fully functional blockchain implementation.
+This project is a work in progress. I will be gradually adding additional functionality, culminating (ideally) in a fully functional blockchain implementation.
 
-## Getting Started
+## Installation
 
 Please follow these steps to launch/use this project.
 
@@ -16,6 +16,35 @@ Installing Node and NPM is pretty straightforward using the installer package av
 ```
 npm init
 ```
+
+## Overview
+
+Here I have listed the essential files and APIs exposed by them:
+
+### Implementation -- blockChain.js
+
+#### Promises
+
+Promises are used to interact with LevelDB. As a result, all callers must also be "promisified", which is what I have done. Almost every method in the BlockChain class returns a Promise.
+
+**class Block:**
+- createGenesisBlock(): Block
+- fromBlob(blob): Block
+- toString(): String
+- calculateHash(): String
+- validate(): Bool
+- isPrecursorTo(nextBlock): Bool
+
+**class BlockChain**
+- afterCreateBlockChain(): Promise(blockChain)
+- afterAddBlock(block): Promise(block)
+- afterGetBestBlock(): Promise(block)
+- afterGetBlock(height): Promise(block)
+- afterGetBlockCount(): Promise(count)
+- afterAssertValidity(height): Promise(isValid)
+- afterGetInvalidBlocks(): Promise([hashErrors, linkErrors])
+
+### Persistence layer (leveldb) -- blockStore.js
 
 ## Testing
 
