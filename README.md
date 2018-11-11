@@ -6,13 +6,15 @@ This project is a work in progress. I will be gradually adding additional functi
 
 Here I have listed the essential files and APIs exposed by them.
 
-## Implementation -- blockChain.js
+## Implementation
 
 ### Promises
 
 Promises are used to interact with LevelDB. As a result, all callers must also be "promisified", which is what I have done. Almost every method in the BlockChain class returns a Promise.
 
 #### Block Class
+
+**In file**: blockChain.js
 
 Very simple class for creating blocks and calling various functions on them.
 
@@ -31,6 +33,8 @@ This is the meat of the blockchain implementation. This class exposes (via Promi
 
 When initialized, it checks whether the leveldb already exists, and if so, it initializes itself from that data, and normal blockchain operations (addBlock, getBlock, etc) can continue after that.
 
+**In file**: blockChain.js
+
 **class BlockChain**
 *APIs:*
 - afterCreateBlockChain(): Promise(blockChain)
@@ -44,6 +48,8 @@ When initialized, it checks whether the leveldb already exists, and if so, it in
 ### Persistor Class
 
 This is the wrapper class utilized by the BlockChain class, as a proxy to the leveldb APIs. Since the leveldb API returns Promises, the Persistor class API does the same, and so does the BlockChain class above it.
+
+**In file**: blockStore.js
 
 **class Persistor** (wrapper for **LevelDB** access)
 *APIs:*
