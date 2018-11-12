@@ -1,14 +1,16 @@
 {
-  "name": "Project_2",
+  "name": "blockchain",
   "version": "1.0.0",
-  "description": "",
+  "description": "This project is a work in progress. I will be gradually adding additional functionality, culminating (ideally) in a fully functional blockchain implementation.",
   "main": "test.js",
-  "directories": {},
+  "directories": {
+    "test": "test"
+  },
   "scripts": {
     "test": "mocha"
   },
   "author": "",
-  "license": "GPL",
+  "license": "GPL-3.0-or-later",
   "devDependencies": {},
   "dependencies": {
     "chai": "^4.2.0",
@@ -17,5 +19,13 @@
     "fs-extra": "^7.0.1",
     "level": "^4.0.0",
     "mocha": "^5.2.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/safdark/BlockChain.git"
+  },
+  "bugs": {
+    "url": "https://github.com/safdark/BlockChain/issues"
+  },
+  "homepage": "https://github.com/safdark/BlockChain#readme"
 }

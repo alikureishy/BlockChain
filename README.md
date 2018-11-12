@@ -74,6 +74,7 @@ Installing Node and NPM is pretty straightforward using the installer package av
 - Use NPM to initialize the project (package.json will ensure that all the relevant project dependencies are installed).
 ```
 npm init
+npm install
 ```
 
 ## Testing

@@ -79,6 +79,16 @@ describe('testChainGrowth', function () {
           }
         ).then(
           (genesisBlock) => {
+            // Ensure best block height is 0 for the genesis block:
+            return blockChain.afterGetBestBlockHeight().then(
+              (height) => {
+                expect(height).to.be.equal(genesisBlock.height);
+                return genesisBlock;
+              }
+            )
+          }
+        ).then(
+          (genesisBlock) => {
             return blockChain.afterGetBlockCount().then(
               (originalCount) => {
                 // Ensure blockCount is 1 since we're starting from a clean db:
@@ -113,6 +123,15 @@ describe('testChainGrowth', function () {
                           expect(retrieved.previousBlockHash).to.be.equal(blockToVerify.previousBlockHash);
                           expect(retrieved.hash).to.be.equal(blockToVerify.calculateHash());
                           return retrieved;
+                        }
+                      ).then(
+                        (retrieved) => {
+                          return blockChain.afterGetBestBlockHeight().then(
+                            (height) => {
+                              expect(height).to.be.equal(retrieved.height);
+                              return retrieved;
+                            }
+                          )
                         }
                       )
                     }
@@ -152,7 +171,7 @@ describe('testChainValidation', function () {
     var folder = "./chaindata3";
     fs.removeSync(folder);
     console.log("Prepared clean test workspace...");
-    
+
     let NUM_BLOCKS_TO_ADD = 9; // WIll yield 20 blocks total (including genesis block)
     var BLOCKS_ADDED = Array();
 
@@ -173,20 +192,34 @@ describe('testChainValidation', function () {
         return new Promise((resolve, reject) => {return ((function recurse (i, j) {
           setTimeout(function () {
               let toAdd = new Block("Test Block - " + (i + 1));
-              blockChain.afterAddBlock(toAdd).then(
-                (retrieved) => {
-                  console.log("BLock count: ", BLOCKS_ADDED.length);
-                  assert(retrieved instanceof Block);
-                  BLOCKS_ADDED.push(retrieved);
-                  assert (retrieved.height == BLOCKS_ADDED.length - 1);
-                  // Check the latest count
-                  if (++i < j) {
-                    return recurse(i, j);
-                  } else {
-                    resolve(blockChain);
+            blockChain.afterAddBlock(toAdd).then(
+              (retrieved) => {
+                assert(retrieved instanceof Block);
+                assert(retrieved.validate());
+                BLOCKS_ADDED.push(retrieved);
+                assert(retrieved.height == BLOCKS_ADDED.length - 1);
+                return retrieved;
+              }
+            ).then(
+              (retrieved) => {
+                // Validate the added block
+                return blockChain.afterAssertValidity(retrieved.height).then(
+                  (isValid) => {
+                    expect(isValid).to.be.equal(true);
+                    return retrieved;
                   }
+                )
+              }
+            ).then(
+              (retrieved) => {
+                // Check the latest count
+                if (++i < j) {
+                  return recurse(i, j);
+                } else {
+                  resolve (blockChain);
                 }
-              )
+              }
+            )
           }, 100);
         })(0, NUM_BLOCKS_TO_ADD));
       })}
@@ -211,6 +244,7 @@ describe('testChainValidation', function () {
             var blockToEdit = BLOCKS_ADDED[2];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
+            assert(blockToEdit.validate()==false);
             return persistor.afterUpdateBlob(blockToEdit.height, blockToEdit).then(
               (blobCount) => {
                 expect(BLOCKS_ADDED.length).to.be.equal(blobCount);
@@ -226,7 +260,16 @@ describe('testChainValidation', function () {
                   }
                 );
               }
-            );
+            ).then(
+              (persistor) => {
+                return blockChain.afterAssertValidity(blockToEdit.height).then(
+                  (isValid) => {
+                    expect(isValid).to.be.equal(false);
+                    return persistor;
+                  }
+                )
+              }
+            )
           }
         ).then(
           (persistor) => {
