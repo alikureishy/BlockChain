@@ -25,7 +25,7 @@ class Persistor {
      *      instance.
      * @param {string} folder 
      */
-    static afterCreatePersistor(folder) {
+    static createPersistorAnd(folder) {
         return new Promise(
             function(resolve, reject) {
                 var persistor = new Persistor(folder);
@@ -96,7 +96,7 @@ class Persistor {
      * 
      * @param {any} key 
      */
-  	afterGetBlob(key) {
+  	getBlobAnd(key) {
         let self = this;
         return new Promise(
             function(resolve, reject) {
@@ -118,7 +118,7 @@ class Persistor {
      * @param {any} key 
      * @param {any} blob 
      */
-    afterAddBlob(key, blob) {
+    addBlobAnd(key, blob) {
         let self = this;
         return new Promise(function(resolve, reject) {
             self.db.put(key, blob, function(err) {
@@ -139,7 +139,7 @@ class Persistor {
      * @param {any} key 
      * @param {any} blob 
      */
-    afterUpdateBlob(key, blob) {
+    updateBlobAnd(key, blob) {
         let self = this;
         return new Promise(function(resolve, reject) {
             self.db.get(key, function(err, value) {

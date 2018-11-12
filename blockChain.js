@@ -106,7 +106,7 @@ class BlockChain{
    *    Returns a blockchain instance
    * @param {string} folder
    */
-  static afterCreateBlockChain(folder) {
+  static createBlockChainAnd(folder) {
     let blockChain = new BlockChain(folder);
     return blockChain.whenPersistorReady.then(
       function(persistor) {
@@ -119,7 +119,8 @@ class BlockChain{
   }
 
   /**
-   * Returns a blockchain instance (Do not use directly)
+   * [DO NOT USE THIS DIRECTLY]
+   * Returns a blockchain instance
    * @param {string} folder
    */
   constructor(folder){
@@ -127,12 +128,12 @@ class BlockChain{
     self.whenPersistorReady =
       new Promise(
         function(resolve, reject) {
-          Persistor.afterCreatePersistor(folder).then(
+          Persistor.createPersistorAnd(folder).then(
             function(persistor) {
               if (persistor.getBlobCount()==0) {
                 // console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
-                persistor.afterAddBlob(0, genesisBlock).then(
+                persistor.addBlobAnd(0, genesisBlock).then(
                   function(blockCount) {
                     // console.info("Added 'Genesis Block': \n", genesisBlock);
                     // console.info("--> Total size of chain: \n", blockCount);
@@ -160,7 +161,7 @@ class BlockChain{
    *
    * @param {Block} newBlock
    */
-  afterAddBlock(newBlock){
+  addBlockAnd(newBlock){
     let self = this;
     return self.whenPersistorReady.then(
       function(persistor) {
@@ -169,13 +170,13 @@ class BlockChain{
         // Initializing necessary fields:
         newBlock.height = persistor.getBlobCount();
         newBlock.time = new Date().getTime().toString().slice(0,-3);
-        return self.afterGetBestBlock().then(
+        return self.getBestBlockAnd().then(
           function(bestBlock) {
             newBlock.previousBlockHash = bestBlock.hash;
             newBlock.hash = newBlock.calculateHash();
 
             // Persist the block:
-            return persistor.afterAddBlob(newBlock.height, newBlock).then(
+            return persistor.addBlobAnd(newBlock.height, newBlock).then(
               function(blockCount) {
                 assert (blockCount == newBlock.height + 1); // The height and actual block count should be in lock-step
                 return newBlock;
@@ -200,14 +201,14 @@ class BlockChain{
    * Promise:
    *    Returns the last block in the chain
    */
-  afterGetBestBlock() {
+  getBestBlockAnd() {
     let self = this;
     return self.whenPersistorReady.then(
       function(persistor) {
         if (persistor.getBlobCount() == 0) {
           Promise.reject('Chain has zero blocks');
         } else {
-          return self.afterGetBlock(persistor.getBlobCount()-1);
+          return self.getBlockAnd(persistor.getBlobCount()-1);
         }
       },
       function(err) {
@@ -222,7 +223,7 @@ class BlockChain{
    *
    * @param {int} blockHeight
    */
-  afterGetBlock(blockHeight){
+  getBlockAnd(blockHeight){
     let self = this;
     return self.whenPersistorReady.then(
       function(persistor) {
@@ -230,7 +231,7 @@ class BlockChain{
           console.log("Invalid block height being queried: ", blockHeight);
           throw "Invalid block height referenced " + blockHeight;
         }
-        return persistor.afterGetBlob(blockHeight).then(
+        return persistor.getBlobAnd(blockHeight).then(
           function(blob) {
             return Block.fromBlob(blob);
           },
@@ -246,7 +247,7 @@ class BlockChain{
    * Promise:
    *    Returns the number of blocks in the chain
    */
-  afterGetBlockCount() {
+  getBlockCountAnd() {
     let self = this;
     return self.whenPersistorReady.then(
       function(persistor) {
@@ -262,7 +263,7 @@ class BlockChain{
    * Promise:
    *    Returns the height of the last block in the chain
    */
-  afterGetBestBlockHeight() {
+  getBestBlockHeightAnd() {
     let self = this;
     return self.whenPersistorReady.then(
       (persistor) => {
@@ -281,11 +282,11 @@ class BlockChain{
    *    Validates the block at the given height
    * @param {int} blockHeight
    */
-  afterAssertValidity(blockHeight) {
+  validateBlockAnd(blockHeight) {
     let self = this;
     return self.whenPersistorReady.then(
       function() {
-        return self.afterGetBlock(blockHeight).then(
+        return self.getBlockAnd(blockHeight).then(
           function(block) {
             if (block.validate()) {
               return true;
@@ -309,15 +310,15 @@ class BlockChain{
    * Promise:
    *  Validates the entire blockchain
    */
-  afterGetInvalidBlocks() {
+  validateBlockChainAnd() {
     let self = this;
     return self.whenPersistorReady.then(
       (persistor) => {
         let promises = [];
         for (let i = 0; i < persistor.getBlobCount(); i++) {
-          // First validate block hash itafter:
+          // First validate block hash:
           promises.push(
-            self.afterGetBlock(i).then(
+            self.getBlockAnd(i).then(
               (block) => {
                 let hasHashError = false;
                 if (!block.validate()) {
@@ -333,7 +334,7 @@ class BlockChain{
                 }
                 else {
                   // Validate the back pointer from the next block:
-                  return self.afterGetBlock(i+1).then(
+                  return self.getBlockAnd(i+1).then(
                     (nextBlock) => {
                       if (!block.isPrecursorTo(nextBlock)) {
                         hasLinkError=true;

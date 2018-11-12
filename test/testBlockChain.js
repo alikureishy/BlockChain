@@ -34,12 +34,12 @@ describe('testChainInitialization', function () {
     // rimraf(folder, function() { console.log("Preparing clean test workspace...")});
 
     // 2. ACT:
-    var whenBlockChainCreated = BlockChain.afterCreateBlockChain(folder);
+    var whenBlockChainCreated = BlockChain.createBlockChainAnd(folder);
 
     // 3. ASSERT:
     return expect(whenBlockChainCreated.then(
       (blockchain) => {
-        blockchain.afterGetBlock(0).then(
+        blockchain.getBlockAnd(0).then(
           (block) => {
             expect(block.body).to.be.equal("Genesis Block");
             expect(block.previousBlockHash).to.be.equal("");
@@ -70,17 +70,17 @@ describe('testChainGrowth', function () {
 
     // 2. ACT & ASSERT
     let NUM_BLOCKS_TO_ADD = 10;
-    return expect(BlockChain.afterCreateBlockChain(folder).then(
+    return expect(BlockChain.createBlockChainAnd(folder).then(
       (blockChain) => {
         // First get the initial block count:
-        blockChain.afterGetBlock(0).then (
+        blockChain.getBlockAnd(0).then (
           (genesisBlock) => {
             return genesisBlock;
           }
         ).then(
           (genesisBlock) => {
             // Ensure best block height is 0 for the genesis block:
-            return blockChain.afterGetBestBlockHeight().then(
+            return blockChain.getBestBlockHeightAnd().then(
               (height) => {
                 expect(height).to.be.equal(genesisBlock.height);
                 return genesisBlock;
@@ -89,7 +89,7 @@ describe('testChainGrowth', function () {
           }
         ).then(
           (genesisBlock) => {
-            return blockChain.afterGetBlockCount().then(
+            return blockChain.getBlockCountAnd().then(
               (originalCount) => {
                 // Ensure blockCount is 1 since we're starting from a clean db:
                 expect(originalCount).to.be.equal(1);
@@ -103,7 +103,7 @@ describe('testChainGrowth', function () {
             (function recurse (i, j, previousBlock) {
               setTimeout(function () {
                   let toAdd = new Block("Test Block - " + (originalCount + i));
-                  return blockChain.afterAddBlock(toAdd).then(
+                  return blockChain.addBlockAnd(toAdd).then(
                     (retrieved) => {
                       // Verify that the remaining fields of the block were set appropriately:
                       expect(retrieved.height).to.be.equal(originalCount + i);
@@ -115,7 +115,7 @@ describe('testChainGrowth', function () {
                   ).then(
                     (retrieved) => {
                       // Retrieve the same block and verify they're the same:
-                      return blockChain.afterGetBlock(retrieved.height).then(
+                      return blockChain.getBlockAnd(retrieved.height).then(
                         (blockToVerify) => {
                           expect(retrieved.height).to.be.equal(blockToVerify.height);
                           expect(retrieved.body).to.be.equal(blockToVerify.body);
@@ -126,7 +126,7 @@ describe('testChainGrowth', function () {
                         }
                       ).then(
                         (retrieved) => {
-                          return blockChain.afterGetBestBlockHeight().then(
+                          return blockChain.getBestBlockHeightAnd().then(
                             (height) => {
                               expect(height).to.be.equal(retrieved.height);
                               return retrieved;
@@ -138,7 +138,7 @@ describe('testChainGrowth', function () {
                   ).then(
                     (retrieved) => {
                       // Check the latest count
-                      return blockChain.afterGetBlockCount().then(
+                      return blockChain.getBlockCountAnd().then(
                         (runningCount) => {
                           expect(runningCount).to.be.equal(originalCount+i+1);
                           if (++i < j) {
@@ -159,7 +159,7 @@ describe('testChainGrowth', function () {
       }
     ).then(
       (blockchain) => {
-        return 'done'; // blockchain.afterShutdown();
+        return 'done';
       }
     )).to.eventually.equal('done');
   });
@@ -176,10 +176,10 @@ describe('testChainValidation', function () {
     var BLOCKS_ADDED = Array();
 
     // 2. ACT & ASSERT
-    return expect(BlockChain.afterCreateBlockChain(folder).then(
+    return expect(BlockChain.createBlockChainAnd(folder).then(
       (blockChain) => {
         // First get the genesis block:
-        return blockChain.afterGetBlock(0).then (
+        return blockChain.getBlockAnd(0).then (
           (genesisBlock) => {
             assert (genesisBlock instanceof Block);
             BLOCKS_ADDED.push(genesisBlock);
@@ -192,7 +192,7 @@ describe('testChainValidation', function () {
         return new Promise((resolve, reject) => {return ((function recurse (i, j) {
           setTimeout(function () {
               let toAdd = new Block("Test Block - " + (i + 1));
-            blockChain.afterAddBlock(toAdd).then(
+            blockChain.addBlockAnd(toAdd).then(
               (retrieved) => {
                 assert(retrieved instanceof Block);
                 assert(retrieved.validate());
@@ -203,7 +203,7 @@ describe('testChainValidation', function () {
             ).then(
               (retrieved) => {
                 // Validate the added block
-                return blockChain.afterAssertValidity(retrieved.height).then(
+                return blockChain.validateBlockAnd(retrieved.height).then(
                   (isValid) => {
                     expect(isValid).to.be.equal(true);
                     return retrieved;
@@ -226,7 +226,7 @@ describe('testChainValidation', function () {
     ).then(
       (blockChain) => {
         // Verify that the chain is valid:
-        return blockChain.afterGetInvalidBlocks().then(
+        return blockChain.validateBlockChainAnd().then(
           ([hashErrors, linkErrors]) => {
             expect(hashErrors.length).to.be.equal(0);
             expect(linkErrors.length).to.be.equal(0);
@@ -245,10 +245,10 @@ describe('testChainValidation', function () {
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
             assert(blockToEdit.validate()==false);
-            return persistor.afterUpdateBlob(blockToEdit.height, blockToEdit).then(
+            return persistor.updateBlobAnd(blockToEdit.height, blockToEdit).then(
               (blobCount) => {
                 expect(BLOCKS_ADDED.length).to.be.equal(blobCount);
-                return persistor.afterGetBlob(blockToEdit.height).then(
+                return persistor.getBlobAnd(blockToEdit.height).then(
                   (blob) => {
                     let blockToVerify = Block.fromBlob(blob);
                     expect(blockToEdit.height).to.be.equal(blockToVerify.height);
@@ -262,7 +262,7 @@ describe('testChainValidation', function () {
               }
             ).then(
               (persistor) => {
-                return blockChain.afterAssertValidity(blockToEdit.height).then(
+                return blockChain.validateBlockAnd(blockToEdit.height).then(
                   (isValid) => {
                     expect(isValid).to.be.equal(false);
                     return persistor;
@@ -277,10 +277,10 @@ describe('testChainValidation', function () {
             var blockToEdit = BLOCKS_ADDED[4];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
-            return persistor.afterUpdateBlob(blockToEdit.height, blockToEdit).then(
+            return persistor.updateBlobAnd(blockToEdit.height, blockToEdit).then(
               (blobCount) => {
                 expect(BLOCKS_ADDED.length).to.be.equal(blobCount);
-                return persistor.afterGetBlob(blockToEdit.height).then(
+                return persistor.getBlobAnd(blockToEdit.height).then(
                   (blob) => {
                     let blockToVerify = Block.fromBlob(blob);
                     expect(blockToEdit.height).to.be.equal(blockToVerify.height);
@@ -300,10 +300,10 @@ describe('testChainValidation', function () {
             var blockToEdit = BLOCKS_ADDED[7];
             blockToEdit.body = "Inducted chain error";
             blockToEdit.previousBlockHash = "Induced link error";
-            return persistor.afterUpdateBlob(blockToEdit.height, blockToEdit).then(
+            return persistor.updateBlobAnd(blockToEdit.height, blockToEdit).then(
               (blobCount) => {
                 expect(BLOCKS_ADDED.length).to.be.equal(blobCount);
-                return persistor.afterGetBlob(blockToEdit.height).then(
+                return persistor.getBlobAnd(blockToEdit.height).then(
                   (blob) => {
                     let blockToVerify = Block.fromBlob(blob);
                     expect(blockToEdit.height).to.be.equal(blockToVerify.height);
@@ -329,7 +329,7 @@ describe('testChainValidation', function () {
       }
     ).then(
       (blockChain) => {
-        return blockChain.afterGetInvalidBlocks().then(
+        return blockChain.validateBlockChainAnd().then(
           ([hashErrors, linkErrors]) => {
             expect(hashErrors.length).to.be.equal(3);
             expect(linkErrors.length).to.be.equal(3);
@@ -338,7 +338,7 @@ describe('testChainValidation', function () {
       }
     ).then(
       (blockchain) => {
-        return 'done'; // blockchain.afterShutdown();
+        return 'done';
       }
     )).to.eventually.equal('done');
    });
