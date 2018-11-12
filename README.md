@@ -37,13 +37,14 @@ When initialized, it checks whether the leveldb already exists, and if so, it in
 
 **class BlockChain**
 *APIs:*
-- afterCreateBlockChain(): Promise(blockChain)
-- afterAddBlock(block): Promise(block)
-- afterGetBestBlock(): Promise(block)
-- afterGetBlock(height): Promise(block)
-- afterGetBlockCount(): Promise(count)
-- afterAssertValidity(height): Promise(isValid)
-- afterGetInvalidBlocks(): Promise([hashErrors, linkErrors])
+- createBlockChainAnd(): Promise(blockChain)
+- addBlockAnd(block): Promise(block)
+- getBestBlockAnd(): Promise(block)
+- getBlockAnd(height): Promise(block)
+- getBlockCountAnd(): Promise(count)
+- getBestBlockHeightAnd(): Promise(count)
+- validateBlockAnd(height): Promise(isValid)
+- validateBlockChainAnd(): Promise([hashErrors, linkErrors])
 
 ### Persistor Class
 
@@ -53,11 +54,11 @@ This is the wrapper class utilized by the BlockChain class, as a proxy to the le
 
 **class Persistor** (wrapper for **LevelDB** access)
 *APIs:*
-- afterCreatePersistor(): Promise(persistor)
+- createPersistorAnd(): Promise(persistor)
 - printBlobs(): n/a
-- afterGetBlob(key): Promise(blob)
-- afterAddBlob(key, blob): Promise(totalCount)
-- afterUpdateBlob(key, blob): Promise(totalCount)
+- getBlobAnd(key): Promise(blob)
+- addBlobAnd(key, blob): Promise(totalCount)
+- updateBlobAnd(key, blob): Promise(totalCount)
 - getBlobCount(): count
 
 
