@@ -31,10 +31,14 @@ server.route({
     path:'/block',
     handler:function(request,h) {
         return (async function add(req, handler) {
-            let block = new Block(req.payload);
-            let blockchain = await blockChainPromise;
-            let newblock = await blockchain.addBlockAnd(block);
-            return newblock;
+            let block = Block.fromBlob(req.payload);
+            if (block == null || block.body == null || block.body == '') {
+                return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
+            } else {
+                let blockchain = await blockChainPromise;
+                let newblock = await blockchain.addBlockAnd(block);
+                return newblock;
+            }
         }) (request,h);
     }
 });

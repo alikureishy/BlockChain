@@ -30,19 +30,24 @@ class Block{
    */
   static fromBlob(blob) {
     var block = new Block("");
-    JSON.parse(blob, function(field, value) {
-      if (field=='body') {
-        block.body = value;
-      } else if (field=='time') {
-        block.time = value;
-      } else if (field=='height') {
-        block.height = value;
-      } else if (field=='previousBlockHash') {
-        block.previousBlockHash = value;
-      } else if (field=='hash') {
-        block.hash = value;
-      }
-    });
+    try {
+      JSON.parse(blob, function(field, value) {
+        if (field=='body') {
+          block.body = value;
+        } else if (field=='time') {
+          block.time = value;
+        } else if (field=='height') {
+          block.height = value;
+        } else if (field=='previousBlockHash') {
+          block.previousBlockHash = value;
+        } else if (field=='hash') {
+          block.hash = value;
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      block = null;
+    }
     return block;
   }
 
