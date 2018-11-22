@@ -16,8 +16,12 @@ server.route({
     method:'GET',
     path:'/block/{height}',
     handler:function(request,h) {
-        console.log("Requested block with height: ", request.params.height);
-        return 'Success';
+        return (async function get(req, handler) {
+            let height = req.params.height;
+            let blockchain = await blockChainPromise;
+            let block = await blockchain.getBlockAnd(height);
+            return block;
+        }) (request,h);
     }
 });
 
