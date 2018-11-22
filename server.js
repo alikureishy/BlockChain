@@ -1,6 +1,9 @@
 'use strict';
-
+const Block = require('./blockChain.js').Block;
+const BlockChain = require('./blockChain.js').BlockChain;
 const Hapi=require('hapi');
+
+const blockChainPromise = BlockChain.createBlockChainAnd("blockdata1");
 
 // Create a server with a host and port
 const server=Hapi.server({
@@ -23,8 +26,12 @@ server.route({
     method:'POST',
     path:'/block',
     handler:function(request,h) {
-        console.log("Created block with content: ", request.payload);
-        return 'Success';
+        return (async function add(req, handler) {
+            let block = new Block(req.payload);
+            let blockchain = await blockChainPromise;
+            let newblock = await blockchain.addBlockAnd(block);
+            return newblock;
+        }) (request,h);
     }
 });
 
