@@ -120,5 +120,6 @@ class BlockChainServer {
     };
 }
 
-let server = new BlockChainServer("testdata");
-server.start();
+module.exports = {
+    BlockChainServer : BlockChainServer
+}
