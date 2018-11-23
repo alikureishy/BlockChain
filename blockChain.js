@@ -376,6 +376,12 @@ class BlockChain{
       }
     );
   }
+
+  async closeAnd() {
+    let self = this;
+    let persistor = await self.whenPersistorReady;
+    await persistor.closeAnd();
+  }
 }
 
 module.exports = {

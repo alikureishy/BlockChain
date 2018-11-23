@@ -168,6 +168,11 @@ class Persistor {
         let self = this;
         return self.blobCount;
     }
+
+    async closeAnd() {
+        let self = this;
+        await self.db.close();
+    }
 }
 
 // // Export the class

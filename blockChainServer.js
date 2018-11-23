@@ -131,6 +131,8 @@ class BlockChainServer {
 
         try {
             await this.server.stop();
+            let blockChain = await this.blockChainPromise;
+            await blockChain.closeAnd();
         }
         catch (err) {
             console.log(err);
