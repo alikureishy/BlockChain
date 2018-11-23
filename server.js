@@ -118,6 +118,19 @@ class BlockChainServer {
 
         console.log('Server running at:', this.server.info.uri);
     };
+
+    async stop() {
+
+        try {
+            await this.server.stop();
+        }
+        catch (err) {
+            console.log(err);
+            process.exit(1);
+        }
+
+        console.log('Server stopped: ', this.server.info.uri);
+    };
 }
 
 module.exports = {

@@ -1,28 +1,36 @@
-var server = require('../server').;
-
-var expect = require('chai').expect;
+const expect = require('chai').expect;
 const assert = require('assert');
-var fs = require('fs-extra');
+const fs = require('fs-extra');
+const frisby = require('frisby');
 
-var BlockChain = require('../blockChain.js').BlockChain;
-var Block = require('../blockChain.js').Block;
+const BlockChainServer = require('../server.js').BlockChainServer;
+const Block = require('../blockChain.js').Block;
 
+/**
+ * Test to verify the GET (count) REST-API works
+ * See: https://github.com/vlucas/frisby for expectation options
+ */
 describe('testGetCount', function () {
+    var folder = "testGetCount";
     var server = null;
-    before(() => {
-        server = new server();
+    before(async () => {
+        console.info("Starting up server");
+        server = new BlockChainServer(folder);
+        await server.start();
     });
+
     it('should return an accurate count of the blocks', function () {
-  
-      // Vanilla block:
-      var block = new Block();
-      var hash = block.calculateHash();
-      expect(hash).to.be.equal("6e4a093c87b05b78ec14d83386243ecdf96e9add38e73b224b329ba4a19331cc");
-  
-      // Block with 'hash' value already specified -- this should not affect the has recalculation:
-      block.hash = "Some random hash value that should not affect the hash calculation";
-      hash = block.calculateHash();
-      expect(hash).to.be.equal("6e4a093c87b05b78ec14d83386243ecdf96e9add38e73b224b329ba4a19331cc");
+        return frisby.get('http://localhost:8000/block/count')
+                .expect('status', 200)
+                .expect('bodyContains',"1")
+                .done(() => {});
+                // .expect('payload', "1");
+    });
+   
+    after(async () => {
+        await server.stop();
+        fs.rmdir(folder);
+        console.info("...Stopped server.");
     });
   });
   
