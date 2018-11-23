@@ -26,6 +26,8 @@ describe('testCalculateHash', function () {
 
 describe('testChainInitialization', function () {
   var folder = "./.testdata/testChainInitialization";
+  var whenBlockChainCreated = null;
+
   before(() => {
     rimraf.sync(folder);
     fs.removeSync(folder)
@@ -38,7 +40,7 @@ describe('testChainInitialization', function () {
     // rimraf(folder, function() { console.log("Preparing clean test workspace...")});
 
     // 2. ACT:
-    var whenBlockChainCreated = BlockChain.createBlockChainAnd(folder);
+    whenBlockChainCreated = BlockChain.createBlockChainAnd(folder);
 
     // 3. ASSERT:
     return expect(whenBlockChainCreated.then(
@@ -62,7 +64,9 @@ describe('testChainInitialization', function () {
     )).to.eventually.equal('done');
   });
 
-  after( () => {
+  after( async() => {
+    let blockChain = await whenBlockChainCreated;
+    await blockChain.closeAnd();
     rimraf.sync(folder);
     fs.removeSync(folder)
   });
@@ -72,6 +76,7 @@ describe('testChainInitialization', function () {
 
 describe('testChainGrowth', function () {
   var folder = "./.testdata/testChainGrowth";
+  var whenBlockChainCreated = null;
   before(() => {
     rimraf.sync(folder);
     fs.removeSync(folder)
@@ -81,10 +86,11 @@ describe('testChainGrowth', function () {
 
     // 1. ARRANGE
     console.log("Prepared clean test workspace...");
+    whenBlockChainCreated = BlockChain.createBlockChainAnd(folder);
 
     // 2. ACT & ASSERT
     let NUM_BLOCKS_TO_ADD = 10;
-    return expect(BlockChain.createBlockChainAnd(folder).then(
+    return expect(whenBlockChainCreated.then(
       (blockChain) => {
         // First get the initial block count:
         blockChain.getBlockAnd(0).then (
@@ -178,7 +184,9 @@ describe('testChainGrowth', function () {
     )).to.eventually.equal('done');
   });
 
-  after(() => {
+  after(async() => {
+    let blockChain = await whenBlockChainCreated;
+    await blockChain.closeAnd();
     rimraf.sync(folder);
     fs.removeSync(folder)
   });
@@ -187,6 +195,7 @@ describe('testChainGrowth', function () {
 
 describe('testChainValidation', function () {
   var folder = "./.testdata/testChainValidation";
+  whenBlockChainCreated = null;
   before(() => {
     rimraf.sync(folder);
     fs.removeSync(folder)
@@ -197,9 +206,10 @@ describe('testChainValidation', function () {
 
     let NUM_BLOCKS_TO_ADD = 9; // WIll yield 20 blocks total (including genesis block)
     var BLOCKS_ADDED = Array();
+    whenBlockChainCreated = BlockChain.createBlockChainAnd(folder);
 
     // 2. ACT & ASSERT
-    return expect(BlockChain.createBlockChainAnd(folder).then(
+    return expect(whenBlockChainCreated.then(
       (blockChain) => {
         // First get the genesis block:
         return blockChain.getBlockAnd(0).then (
@@ -366,7 +376,9 @@ describe('testChainValidation', function () {
     )).to.eventually.equal('done');
    });
 
-   after( () => {
+   after( async () => {
+    let blockChain = await whenBlockChainCreated;
+    await blockChain.closeAnd();
     rimraf.sync(folder);
     fs.removeSync(folder)
   });

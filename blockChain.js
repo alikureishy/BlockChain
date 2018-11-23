@@ -297,7 +297,6 @@ class BlockChain{
             if (block.validate()) {
               return true;
             } else {
-              console.warn('Block #'+blockHeight+' has an invalid hash');
               return false;
             }
           },
