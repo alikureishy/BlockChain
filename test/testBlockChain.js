@@ -1,13 +1,13 @@
 
-var expect = require('chai').expect;
-var chai = require('chai').use(require('chai-as-promised'));
-var should = chai.should(); // This will enable .should for promise assertions
+const expect = require('chai').expect;
+const chai = require('chai').use(require('chai-as-promised'));
+const should = chai.should(); // This will enable .should for promise assertions
 const assert = require('assert');
+const rimraf = require('rimraf');
+const fs = require('fs-extra');
 
-var BlockChain = require('../blockChain.js').BlockChain;
-var Block = require('../blockChain.js').Block;
-// var rimraf = require('rimraf');
-var fs = require('fs-extra');
+const BlockChain = require('../blockChain.js').BlockChain;
+const Block = require('../blockChain.js').Block;
 
 describe('testCalculateHash', function () {
   it('should calculate the hash of the block without the hash field', function () {
@@ -25,11 +25,15 @@ describe('testCalculateHash', function () {
 });
 
 describe('testChainInitialization', function () {
+  var folder = "./.testdata/testChainInitialization";
+  before(() => {
+    rimraf.sync(folder);
+    fs.removeSync(folder)
+  });
+
   it('should have a genesis block as the first block in the chain', function () {
 
     // 1. ARRANGE:
-    var folder = "./chaindata1";
-    fs.removeSync(folder);
     console.log("Prepared clean test workspace...");
     // rimraf(folder, function() { console.log("Preparing clean test workspace...")});
 
@@ -57,15 +61,25 @@ describe('testChainInitialization', function () {
       }
     )).to.eventually.equal('done');
   });
+
+  after( () => {
+    rimraf.sync(folder);
+    fs.removeSync(folder)
+  });
+
 });
 
 
 describe('testChainGrowth', function () {
+  var folder = "./.testdata/testChainGrowth";
+  before(() => {
+    rimraf.sync(folder);
+    fs.removeSync(folder)
+  });
+
   it('should correctly add the sequence of blocks into the blockchain', function () {
 
     // 1. ARRANGE
-    var folder = "./chaindata2";
-    fs.removeSync(folder);
     console.log("Prepared clean test workspace...");
 
     // 2. ACT & ASSERT
@@ -163,14 +177,23 @@ describe('testChainGrowth', function () {
       }
     )).to.eventually.equal('done');
   });
+
+  after(() => {
+    rimraf.sync(folder);
+    fs.removeSync(folder)
+  });
+
 });
 
 describe('testChainValidation', function () {
+  var folder = "./.testdata/testChainValidation";
+  before(() => {
+    rimraf.sync(folder);
+    fs.removeSync(folder)
+  });
+
   it('should detect when a chain is valid and invalid (including the blocks that are invalid)', function () {
      // 1. ARRANGE
-    var folder = "./chaindata3";
-    fs.removeSync(folder);
-    console.log("Prepared clean test workspace...");
 
     let NUM_BLOCKS_TO_ADD = 9; // WIll yield 20 blocks total (including genesis block)
     var BLOCKS_ADDED = Array();
@@ -342,6 +365,12 @@ describe('testChainValidation', function () {
       }
     )).to.eventually.equal('done');
    });
+
+   after( () => {
+    rimraf.sync(folder);
+    fs.removeSync(folder)
+  });
+
  });
 
     // var eqSet = function (as, bs) {
