@@ -10,7 +10,7 @@ Here I have listed the essential files and APIs exposed by them.
 
 ### BlockChain Server
 
-A server has been implemented using the Hapi.js framework.
+A server has been implemented using the **Hapi.js** framework.
 
 The endpoints exposed by this server, for blockchain operations are:
 
@@ -43,10 +43,6 @@ Tests are included in the file at:
 - test/
     - testBlockChainServer.js
 ```
-
-
-**Unit Tests**:
-Unit tests are included in the file 'test/testBlockChainServer.js'. They are run along with the tests for the other components of this project. See the section on 
 
 ### Block Class
 
