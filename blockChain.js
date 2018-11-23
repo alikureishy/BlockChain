@@ -234,16 +234,17 @@ class BlockChain{
       function(persistor) {
         if (blockHeight >= persistor.getBlobCount()) {
           console.log("Invalid block height being queried: ", blockHeight);
-          throw "Invalid block height referenced " + blockHeight;
+          return null;
+        } else {
+          return persistor.getBlobAnd(blockHeight).then(
+            function(blob) {
+              return Block.fromBlob(blob);
+            },
+            function(err) {
+              console.log(err);
+            }
+          );
         }
-        return persistor.getBlobAnd(blockHeight).then(
-          function(blob) {
-            return Block.fromBlob(blob);
-          },
-          function(err) {
-            console.log(err);
-          }
-        );
       }
     );
   }
