@@ -1,7 +1,7 @@
 
 var expect = require('chai').expect;
-var chai = require('chai').use(require('chai-as-promised'));
-var should = chai.should(); // This will enable .should for promise assertions
+// var chai = require('chai').use(require('chai-as-promised'));
+// var should = chai.should(); // This will enable .should for promise assertions
 const assert = require('assert');
 
 var BlockChain = require('../blockChain.js').BlockChain;
