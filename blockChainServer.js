@@ -87,6 +87,8 @@ class BlockChainServer {
             path:'/block',
             handler:function(request,h) {
                 return (async function add(req, handler) {
+                    let headers = req.headers;
+
                     let block = Block.fromBlob(req.payload);
                     if (block == null || block.body == null || block.body == '') {
                         return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
@@ -101,6 +103,20 @@ class BlockChainServer {
                     }
                 }) (request,h);
             }
+            // ,
+            // options: {
+            //     handler:function(request,h) {
+            //         return h.response("Invalid content-type. The 'Content-Type' header MUST either be excluded, or specified as 'text/plain' ").code(415);
+            //     },
+            //     validate: {
+            //         headers: {
+            //             'Content-Type': "text/plain"
+            //         },
+            //         options: {
+            //             allowUnknown: true
+            //         }
+            //     }
+            // }
         });
     }
 
