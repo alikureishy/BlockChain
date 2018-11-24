@@ -8,11 +8,43 @@ Here I have listed the essential files and APIs exposed by them.
 
 ## Implementation
 
-### Promises
+### BlockChain Server
 
-Promises are used to interact with LevelDB. As a result, all callers must also be "promisified", which is what I have done. Almost every method in the BlockChain class returns a Promise.
+A server has been implemented using the **Hapi.js** framework.
 
-#### Block Class
+The endpoints exposed by this server, for blockchain operations are:
+
+| Purpose  | HTTP Verb | URL | Request-Body | Expected-Response |
+| ------------- | ---------- | --- | ---------------------- | --- |
+| Get-Block-Count  | GET  |  http://localhost:8000/block/count |     | "{count}" |
+| Add-New-Block  | POST  | http://localhost:8000/block  | { "body" : "{block-name-here}" } | |
+| Get-Block  | GET  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
+
+**Relevant files**:
+```
+- server.js
+- blockChainServer.js
+```
+
+**Launching the server**:
+```
+node server.js
+```
+
+#### Unit Tests
+
+The tests include:
+- REST-based test for getting the count of blocks in the chain
+- REST-based test for adding a new block into the chain
+- REST-based test for retrieving a specifif block from the chain
+
+Tests are included in the file at:
+```
+- test/
+    - testBlockChainServer.js
+```
+
+### Block Class
 
 **In file**: blockChain.js
 
@@ -27,7 +59,9 @@ Very simple class for creating blocks and calling various functions on them.
 - validate(): Bool
 - isPrecursorTo(nextBlock): Bool
 
-#### BlockChain Class
+### BlockChain Class
+
+Promises are used to interact with LevelDB. As a result, all callers must also be "promisified", which is what I have done. Almost every method in the BlockChain class returns a Promise.
 
 This is the meat of the blockchain implementation. This class exposes (via Promises) the APIs needed for maintaining a blockchain. It utilizes another class for accessing/persisting blockchain data from/to the file system.
 
@@ -77,14 +111,7 @@ Installing Node and NPM is pretty straightforward using the installer package av
 npm init
 npm install
 ```
-
-## Testing
-
-Mocha (with Chai) has been used to build tests for this blockchain implementation. To invoke the tests, please run:
-
-```
-npm test
-```
+#### Unit Tests
 
 The tests include:
 - Test of the hash calculation facility on the Block class
@@ -94,5 +121,15 @@ The tests include:
 
 Tests are included in the file at:
 ```
-./tests/testBlockChain.js
+- test/
+    - testBlockChain.js
+```
+
+## Testing
+
+Mocha (with Chai) has been used to build tests for this blockchain implementation.
+
+To invoke all the unit tests of this project, please run:
+```
+npm test
 ```
