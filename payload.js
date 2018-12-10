@@ -226,3 +226,34 @@ class StarData {
         this.story = story;
     }
 }
+
+class StarBlock {
+    static fromStarData(starData) {
+
+    }
+
+    static fromBlock(block) {
+        this = new StarBlock();
+        this.block = block;
+
+        // Decode the story in the Star info
+        let starData = StarData.fromJSON(this.block.body)
+        let encodedStory = starData.story;
+        let decodedStory = hex2ascii(encodedStory);
+        starData.decodedStory = decodedStory;
+        let newBody = starData.toJSON();
+        this.block.body = newBody;
+    }
+
+    toJSON() {
+        return JSON.stringify(this.block);
+    }
+
+    asStarBlock() {
+        return this.starData;
+    }
+
+    asGenericBlock() {
+        return this.block;
+    }
+}

@@ -39,7 +39,7 @@ class BlockChainServer {
          */
         this.server.route({
             method:'GET',
-            path:'/block/{height}',
+            path:'/block/{height}', // Change to path: /stars/{height}
             handler:function(request,h) {
                 return (async function get(req, handler) {
                     let height = req.params.height;
@@ -49,7 +49,8 @@ class BlockChainServer {
                         if (block==null) {
                             return h.response("Requested block not found: " + height).code(404);
                         } else {
-                            return block;
+                            starBlock = StarBlock(block);
+                            return h.response(starBlock.toJSON()).code(200);
                         }
                     } catch (error) {
                         return h.response(error).code(500);
@@ -92,12 +93,42 @@ class BlockChainServer {
                     let hash = req.params.hash;
                     let blockchain = await self.blockChainPromise;
                     try {
-                        let block = await blockchain.getBlockAnd(height);
+                        let block = await blockchain.getBlockByHashAnd(hash);
                         if (block==null) {
                             return h.response("Requested block not found: " + height).code(404);
                         } else {
-                            return block;
+                            starBlock = StarBlock(block);
+                            return h.response(starBlock.toJSON()).code(200);
                         }
+                    } catch (error) {
+                        return h.response(error).code(500);
+                    }
+                }) (request,h);
+            }
+        });
+
+        /**
+         * ========================================================
+         * Retrieves a star block based on the height
+         * ========================================================
+         */
+        this.server.route({
+            method:'GET',
+            path:'/stars/address:{address}',
+            handler:function(request,h) {
+                return (async function get(req, handler) {
+                    let address = req.params.address;
+                    let blockchain = await self.blockChainPromise;
+                    try {
+                        stars = [];
+                        for (i = 0; !stop; i++) {
+                            let block = await blockchain.getBlockAnd();
+                            let starBlock = new StarBlock(block);
+                            if (starBlock.getStarData().address == address) {
+                                stars.add(starBlock.toJSON());
+                            }
+                        }
+                        return h.response(stars).code(200);
                     } catch (error) {
                         return h.response(error).code(500);
                     }
