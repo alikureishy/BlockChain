@@ -1,4 +1,4 @@
-const BlockChainServer = require('./blockChainServer.js').BlockChainServer;
+const BlockChainServer = require('./rest-layer.js').BlockChainServer;
 
 /**
  * ============================================================
