@@ -6,6 +6,11 @@
 const Block = require('./blockChain.js').Block;
 const BlockChain = require('./blockChain.js').BlockChain;
 const Hapi=require('hapi');
+const Payload=require('payload.js');
+const Mempool = require('mempool.js').Mempool;
+const Authenticator = require('security-layer.js').Authenticator;
+const Star = require('star.js').Star;
+const StarRecord = require('star.js').StarRecord;
 
 class BlockChainServer {
 
@@ -16,7 +21,7 @@ class BlockChainServer {
         this.folder = folder;
         this.port = port;
         this.mempool = Mempool.getSingleton();
-        this.authenticator = Authenticator();
+        this.authenticator = new Authenticator();
         this.blockChainPromise = BlockChain.createBlockChainAnd(this.folder);
 
         let self = this;
@@ -39,7 +44,14 @@ class BlockChainServer {
          */
         this.server.route({
             method:'GET',
-            path:'/block/{height}', // Change to path: /stars/{height}
+            path:'/block/{height}',
+            handler:function(request,h) {
+                return h.redirect("/stars/star");
+            }
+        });
+        this.server.route({
+            method:'GET',
+            path:'/stars/{height}',
             handler:function(request,h) {
                 return (async function get(req, handler) {
                     let height = req.params.height;
@@ -68,6 +80,13 @@ class BlockChainServer {
             method:'GET',
             path:'/block/count',
             handler:function(request,h) {
+                return h.redirect("/stars/count");
+            }
+        });
+        this.server.route({
+            method:'GET',
+            path:'/stars/count',
+            handler:function(request,h) {
                 return (async function get(req, handler) {
                     let blockchain = await self.blockChainPromise;
                     try {
@@ -95,9 +114,9 @@ class BlockChainServer {
                     try {
                         let block = await blockchain.getBlockByHashAnd(hash);
                         if (block==null) {
-                            return h.response("Requested block not found: " + height).code(404);
+                            return h.response("Requested star record not found: " + height).code(404);
                         } else {
-                            starBlock = StarBlock(block);
+                            starBlock = new StarBlock(block);
                             return h.response(starBlock.toJSON()).code(200);
                         }
                     } catch (error) {
@@ -121,11 +140,15 @@ class BlockChainServer {
                     let blockchain = await self.blockChainPromise;
                     try {
                         stars = [];
-                        for (i = 0; !stop; i++) {
-                            let block = await blockchain.getBlockAnd();
-                            let starBlock = new StarBlock(block);
-                            if (starBlock.getStarData().address == address) {
-                                stars.add(starBlock.toJSON());
+                        for (i = 0; true; i++) {
+                            let block = await blockchain.getBlockAnd(i);
+                            if (block==null) {
+                                break; // We've exhausted all the blocks (assuming increasing sequence)
+                            } else {
+                                let starBlock = new StarBlock(block);
+                                if (starBlock.getStarData().address == address) {
+                                    stars.add(starBlock.toJSON());
+                                }
                             }
                         }
                         return h.response(stars).code(200);
@@ -169,17 +192,37 @@ class BlockChainServer {
          */
         this.server.route({
             method:'POST',
-            path:'/block',  // Change this to path: /stars/star
+            path:'/block',
+            handler:function(request,h) {
+                return h.redirect("/stars/star");
+            }
+        });
+        this.server.route({
+            method:'POST',
+            path:'/stars/star',
             handler:function(request,h) {
                 return (async function add(req, handler) {
-                    let registerStarReq = RegisterStarRequest.fromJSON(req.payload);
+                    let registerStarReq = Payload.RegisterStarRequest.fromJSON(req.payload);
                     if (registerStarReq == null || registerStarReq.body == null || registerStarReq.body == '') {
                         return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
                     } else {
                         try {
                             let blockchain = await self.blockChainPromise;
-                            let newblock = await blockchain.addBlockAnd(registerStarReq);
-                            return h.response(newblock).code(201);
+
+                            // Verify that there is a session active for this wallet:
+                            let address = registerStarReq.address;
+                            let timestamp = self.mempool.getSession(address);
+                            if (timestamp==null) {
+                                return h.response("Session has expired or was never created. Please initiate a validation request first.").code(404);
+                            } else {
+                                // Create a new block with this star's data encoded into the 'body' field and add it to the blockchain
+                                starRecord = registerStarReq.starRecord;
+                                let newBlock = new Block(starRecord.toJSON());
+                                newBlock = await blockchain.addBlockAnd(block);
+
+                                assert (block != null, "Failed to add block");
+                                return h.response(newBlock).code(201);
+                            }
                         } catch (error) {
                             return h.response(error).code(500);
                         }
@@ -198,7 +241,7 @@ class BlockChainServer {
             path:'/requestValidation', // Change this to path: /initiate
             handler:function(request,h) {
                 return (async function add(req, handler) {
-                    let sessionReq = SessionRequest.fromJSON(req.payload);
+                    let sessionReq = Payload.SessionRequest.fromJSON(req.payload);
                     if (sessionReq == null || sessionReq.address == null || sessionReq.address == '') {
                         return h.response("Null or invalid JSON provided for wallet address. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
                     } else {
@@ -208,7 +251,7 @@ class BlockChainServer {
                             let timeWindow = self.mempool.getSessionWindow();
                             assert (timestamp != null, "Shoudl not be receiving a null timestamp from mempool.generateSession()")
                             let challenge = self.authenticator.generateChallenge(address, timestamp);
-                            let sessionResp = SessionResponse(address, timestamp, challenge, timeWindow);
+                            let sessionResp = new Payload.SessionResponse(address, timestamp, challenge, timeWindow);
                             return h.response(sessionResp.toJSON()).code(201);
                         } catch (error) {
                             return h.response(error).code(500);
@@ -229,7 +272,7 @@ class BlockChainServer {
             path:'/message-signature/validate', //TODO: Change this to path: /authenticate"
             handler:function(request,h) {
                 return (async function add(req, handler) {
-                    let authenticationReq = AuthenticationRequest.fromJSON(req.payload);
+                    let authenticationReq = Payload.AuthenticationRequest.fromJSON(req.payload);
                     if (authenticationReq == null || authenticationReq.address == null || authenticationReq.address == '') {
                         return h.response("Null or invalid JSON provided for wallet address. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
                     } else {
@@ -237,13 +280,13 @@ class BlockChainServer {
                             let address = authenticationReq.address;
                             let message = authenticationReq.message;
                             let signedMessage = authenticationReq.signedMessage;
-                            let timestamp = self.mempool.getSession(address);
                             let timeWindow = self.mempool.getSessionWindow();
+                            let timestamp = self.mempool.getSession(address);
                             if (timestamp==null) {
                                 return h.response("Session has expired or was never created. Please initiate a validation request first.").code(404);
                             } else {
                                 let isAuthenticated = self.authenticator.verifyAnswer(message, signedMessage, address);
-                                let authenticationResp = AuthenticationResponse(isAuthenticated, address, timestamp, message, timeWindow)
+                                let authenticationResp = new Payload.AuthenticationResponse(isAuthenticated, address, timestamp, message, timeWindow)
                                 if (isAuthenticated) {
                                     return h.response(authenticationResp.toJSON()).code(202);
                                 } else {

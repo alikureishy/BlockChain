@@ -55,8 +55,8 @@ class Block{
    * Constructor
    * @param {string} data
    */
-	constructor(data){
-    this.body = data;
+	constructor(body){
+    this.body = body;
     this.time = null;
     this.height = null;
     this.previousBlockHash = null;
@@ -100,11 +100,39 @@ class Block{
   }
 }
 
+class Dictionary {
+
+  static fromJSON(json) {
+    var dictionary = new Dictionary();
+    try {
+      JSON.parse(blob, function(field, value) {
+        if (field=='table') {
+          dictionary.table = value;
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      dictionary = null;
+    }
+    return dictionary;
+  }
+
+  toJSON() {
+    return JSON.stringify(this);
+  }
+
+  constructor() {
+    this.table = null;
+  }
+}
+
 /* ===== Blockchain Class ==========================
 |  Class with a constructor for new blockchain 		|
 |  ================================================*/
 
 class BlockChain{
+
+  static DICTIONARY_KEY = "DICTIONARY";
 
   /**
    * Promise:
@@ -114,7 +142,15 @@ class BlockChain{
   static createBlockChainAnd(folder) {
     let blockChain = new BlockChain(folder);
     return blockChain.whenPersistorReady.then(
-      function(persistor) {
+      async function(persistor) {
+        // Ensure that the lookup table exists too
+        let blob = await persistor.getBlobAnd(DICTIONARY_KEY);
+        if (blob == null) {
+          blockChain.dictionary = new Dictionary();
+          await persistor.addBlobAnd(DICTIONARY_KEY, dictionary.toString(), count=false);
+        } else {
+          blockChain.dictionary = Dictionary.fromJSON(blob);
+        }
         return blockChain;
       },
       function(err) {
@@ -130,6 +166,7 @@ class BlockChain{
    */
   constructor(folder){
     let self = this;
+    self.dictionary = null;
     self.whenPersistorReady =
       new Promise(
         function(resolve, reject) {
@@ -176,20 +213,19 @@ class BlockChain{
         newBlock.height = persistor.getBlobCount();
         newBlock.time = new Date().getTime().toString().slice(0,-3);
         return self.getBestBlockAnd().then(
-          function(bestBlock) {
+          async function(bestBlock) {
+            //TODO: This nested function needs to be performed within a single "transaction"
             newBlock.previousBlockHash = bestBlock.hash;
             newBlock.hash = newBlock.calculateHash();
 
             // Persist the block:
-            return persistor.addBlobAnd(newBlock.height, newBlock).then(
-              function(blockCount) {
-                assert (blockCount == newBlock.height + 1); // The height and actual block count should be in lock-step
-                return newBlock;
-              },
-              function(err) {
-                console.log(err);
-              }
-            );
+            newBlock = await persistor.addBlobAnd(newBlock.height, newBlock);
+
+            // Update the dictionary
+            self.dictionary[newBlock.hash] = newBlock.height;
+            await persistor.updateBlobAnd(DICTIONARY_KEY, self.dictionary.toJSON());
+
+            return newBlock;
           },
           function(err) {
             console.log(err);
@@ -237,6 +273,34 @@ class BlockChain{
           return null;
         } else {
           return persistor.getBlobAnd(blockHeight).then(
+            function(blob) {
+              return Block.fromBlob(blob);
+            },
+            function(err) {
+              console.log(err);
+            }
+          );
+        }
+      }
+    );
+  }
+
+  /**
+   * Promise:
+   *    Returns the block with the given hash
+   *
+   * @param {int} blockHash
+   */
+  getBlockByHashAnd(blockHash){
+    let self = this;
+    return self.whenPersistorReady.then(
+      function(persistor) {
+        if (blockHash == null || blockHash=='') {
+          console.log("Invalid block hash being queried: ", blockHash);
+          return null;
+        } else {
+          let height = self.dictionary[blockHash];
+          return persistor.getBlobAnd(height).then(
             function(blob) {
               return Block.fromBlob(blob);
             },

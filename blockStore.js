@@ -118,7 +118,7 @@ class Persistor {
      * @param {any} key 
      * @param {any} blob 
      */
-    addBlobAnd(key, blob) {
+    addBlobAnd(key, blob, count=true) {
         let self = this;
         return new Promise(function(resolve, reject) {
             self.db.put(key, blob, function(err) {
@@ -126,7 +126,9 @@ class Persistor {
                     console.log('Blob ' + key + ' submission failed', err);
                     reject(err);
                 }
-                self.blobCount = self.blobCount + 1;
+                if (count) {
+                    self.blobCount = self.blobCount + 1;
+                }
                 resolve(self.blobCount);
             });
         });
@@ -136,6 +138,7 @@ class Persistor {
      * Promise:
      *      Update the blob associated with the given key. This requires
      *      that the key already exists in the db.
+     * 
      * @param {any} key 
      * @param {any} blob 
      */

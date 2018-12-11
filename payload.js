@@ -1,4 +1,33 @@
 
+const StarRecord = require('star.js').StarRecord;
+const Star = require('star.js').Star;
+
+class GetStarByHeightRequest {
+
+}
+class GetStarByHeightResponse {
+
+}
+class GetStarCountRequest {
+
+}
+class GetStarCountResponse {
+
+}
+class GetStarsByAddressRequest {
+
+}
+class GetStarsByAddressResponse {
+
+}
+class GetStarByBlockHashRequest {
+
+}
+class GetStarByBlockHashResponse {
+    
+}
+
+
 class SessionRequest {
 
     /**
@@ -155,105 +184,30 @@ class RegisterStarRequest {
      * @param {string} json
      */
     static fromJSON(json) {
-        var request = new RegisterStarRequest();
-        try {
-            JSON.parse(blob, function(field, value) {
-                if (field=='address') {
-                    request.address = value;
-                } else if (field=='star') {
-                    request.star = StarData.fromJSON(value);
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            request = null;
-        }
-        return request;
+        let starRecord = StarRecord.fromJSON(json);
+
+        // Encode the star's story field:
+        starRecord.star.story = null;
+
+        return new RegisterStarRequest(starRecord);
     }
 
-    constructor() {
+    constructor(starRecord) {
+        this.starRecord = starRecord;
     }
-
 }
 
 class RegisterStarResponse {
+    constructor(blob) {
 
-}
-
-class StarData {
-    /**
-     * Returns a star registration request from the provided json
-     * For example:
-     * {
-     *      "dec": "68° 52' 56.9",
-     *      "ra": "16h 29m 1.0s",
-     *      "story": "Found star using https://www.google.com/sky/"
-     * }
-     * @param {string} json
-     */
-    static fromJSON(json) {
-        var starData = new StarData();
-        try {
-            JSON.parse(blob, function(field, value) {
-                if (field=='ra') {
-                    starData.de = value;
-                } else if (field=='dec') {
-                    starData.star = value;
-                } else if (field=='mag') {
-                    starData.star = value;
-                } else if (field=='cen') {
-                    starData.star = value;
-                } else if (field=='story') {
-                    starData.star = value;
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            starData = null;
-        }
-        return starData;
-    }
-
-    toJSON() {
-        return JSON.stringify(this);
-    }
-
-    constructor(rightAscension, declination, centaurus, magnitude, story) {
-        this.ra = rightAscension;
-        this.dec = declination;
-        this.cen = centaurus;
-        this.mag = magnitude;
-        this.story = story;
     }
 }
 
-class StarBlock {
-    static fromStarData(starData) {
-
-    }
-
-    static fromBlock(block) {
-        this = new StarBlock();
-        this.block = block;
-
-        // Decode the story in the Star info
-        let starData = StarData.fromJSON(this.block.body)
-        let encodedStory = starData.story;
-        let decodedStory = hex2ascii(encodedStory);
-        starData.decodedStory = decodedStory;
-        let newBody = starData.toJSON();
-        this.block.body = newBody;
-    }
-
-    toJSON() {
-        return JSON.stringify(this.block);
-    }
-
-    asStarBlock() {
-        return this.starData;
-    }
-
-    asGenericBlock() {
-        return this.block;
-    }
+module.exports = {
+    RegisterStarResponse : RegisterStarResponse,
+    RegisterStarRequest : RegisterStarRequest,
+    AuthenticationResponse : AuthenticationResponse,
+    AuthenticationRequest : AuthenticationRequest,
+    SessionRequest : SessionRequest,
+    SessionResponse : SessionResponse
 }

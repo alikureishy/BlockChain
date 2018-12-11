@@ -33,3 +33,7 @@ class Mempool {
         return false;
     }
 }
+
+module.exports = {
+    Mempool : Mempool
+}

@@ -1,8 +1,9 @@
-
+/**
+ * Authenticator class to perform signature verification
+ */
 class Authenticator {
 
     constructor() {
-
     }
 
     generateChallenge(address, time) {
@@ -12,4 +13,8 @@ class Authenticator {
     verifyAnswer(message, signedMessage, walletKey) {
 
     }
+}
+
+module.exports = {
+    Authenticator : Authenticator
 }
