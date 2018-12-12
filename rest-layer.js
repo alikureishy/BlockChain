@@ -158,50 +158,6 @@ class BlockChainServer {
             }
         });
 
-        /**
-         * ========================================================
-         * Registers a star onto the blockchain and returns the finalized block
-         * ========================================================
-         */
-        this.server.route({
-            method:'POST',
-            path:'/block',
-            handler:function(request,h) {
-                return h.redirect("/stars/star");
-            }
-        });
-        this.server.route({
-            method:'POST',
-            path:'/stars/star',
-            handler:function(request,h) {
-                return (async function add(req, handler) {
-                    let registerStarReq = Payload.RegisterStarRequest.fromJSON(req.payload);
-                    if (registerStarReq == null || registerStarReq.body == null || registerStarReq.body == '') {
-                        return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
-                    } else {
-                        try {
-                            let blockchain = await self.blockChainPromise;
-
-                            // Verify that there is a session active for this wallet:
-                            let address = registerStarReq.address;
-                            let timestamp = self.mempool.getSession(address);
-                            if (timestamp==null) {
-                                return h.response("Session has expired or was never created. Please initiate a validation request first.").code(404);
-                            } else {
-                                // Create a new block with this star's data encoded into the 'body' field and add it to the blockchain
-                                let newBlock = new Block(registerStarReq.starRecord.toJSON());
-                                newBlock = await blockchain.addBlockAnd(block);
-                                assert (block != null, "Failed to add block");
-                                let response = new SingleStarResponse(block);
-                                return h.response(response.toJSON()).code(201);
-                            }
-                        } catch (error) {
-                            return h.response(error).code(500);
-                        }
-                    }
-                }) (request,h);
-            }
-        });
 
         /**
          * ========================================================
@@ -219,8 +175,8 @@ class BlockChainServer {
                     } else {
                         try {
                             let address = sessionReq.address;
-                            let timestamp = self.mempool.generateSession(address);
-                            let timeWindow = self.mempool.getSessionWindow();
+                            let timestamp = self.mempool.generatePendingSession(address);
+                            let timeWindow = self.mempool.getPendingSessionWindow();
                             assert (timestamp != null, "Shoudl not be receiving a null timestamp from mempool.generateSession()")
                             let challenge = self.authenticator.generateChallenge(address, timestamp);
                             let sessionResp = new Payload.SessionResponse(address, timestamp, challenge, timeWindow);
@@ -251,18 +207,64 @@ class BlockChainServer {
                         try {
                             let address = authenticationReq.address;
                             let signature = authenticationReq.signedMessage;
-                            let timeWindow = self.mempool.getSessionWindow();
-                            let timestamp = self.mempool.getSession(address);
+                            let timestamp = self.mempool.getPendingSession(address);
                             if (timestamp==null) {
-                                return h.response("Session has expired or was never created. Please initiate a validation request first.").code(404);
+                                return h.response("Session has either expired, or was never created. Please initiate a validation request first.").code(404);
                             } else {
                                 let isAuthenticated = self.authenticator.verifyAnswer(address, timestamp, signature, address);
-                                let authenticationResp = new Payload.AuthenticationResponse(isAuthenticated, address, timestamp, message, timeWindow)
                                 if (isAuthenticated) {
+                                    let newTimestamp = mempool.approveSession(address);
+                                    let timeWindow = self.mempool.getValidatedSessionWindow();
+                                    let authenticationResp = new Payload.AuthenticationResponse(isAuthenticated, address, newTimestamp, message, timeWindow)
                                     return h.response(authenticationResp.toJSON()).code(202);
                                 } else {
-                                    return h.response(authenticationResp.toJSON()).code(401);
+                                    return h.response("Signature was invalid").code(401);
                                 }
+                            }
+                        } catch (error) {
+                            return h.response(error).code(500);
+                        }
+                    }
+                }) (request,h);
+            }
+        });
+
+        /**
+         * ========================================================
+         * Registers a star onto the blockchain and returns the finalized block
+         * ========================================================
+         */
+        this.server.route({
+            method:'POST',
+            path:'/block',
+            handler:function(request,h) {
+                return h.redirect("/stars/star");
+            }
+        });
+        this.server.route({
+            method:'POST',
+            path:'/stars/star',
+            handler:function(request,h) {
+                return (async function add(req, handler) {
+                    let registerStarReq = Payload.RegisterStarRequest.fromJSON(req.payload);
+                    if (registerStarReq == null || registerStarReq.body == null || registerStarReq.body == '') {
+                        return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
+                    } else {
+                        try {
+                            let blockchain = await self.blockChainPromise;
+
+                            // Verify that there is a session active for this wallet:
+                            let address = registerStarReq.address;
+                            let timestamp = self.mempool.getValidatedSession(address);
+                            if (timestamp==null) {
+                                return h.response("Session has expired or was never created. Please initiate a session before attempting validation.").code(404);
+                            } else {
+                                // Create a new block with this star's data encoded into the 'body' field and add it to the blockchain
+                                let newBlock = new Block(registerStarReq.starRecord.toJSON());
+                                newBlock = await blockchain.addBlockAnd(block);
+                                assert (block != null, "Failed to add block");
+                                let response = new SingleStarResponse(newBlock);
+                                return h.response(response.toJSON()).code(201);
                             }
                         } catch (error) {
                             return h.response(error).code(500);

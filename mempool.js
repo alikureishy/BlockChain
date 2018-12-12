@@ -25,15 +25,22 @@ class Mempool {
      * Constructor
      */
     constructor() {
-        this.pool = [];
-        this.timeoutRequests = [];   
+        this.pendingSessions = [];
+        this.validatedSessions = [];   
     }
 
     /**
-     * Returns the expiry period for wallet sessions
+     * Returns the expiry period for pending sessions
      */
-    getSessionWindow() {
+    getPendingSessionWindow() {
         return 300; // seconds
+    }
+
+    /**
+     * Returns the expiry period for validated sessions
+     */
+    getValidatedSessionWindow() {
+        return 1800; // seconds
     }
 
     /**
@@ -41,16 +48,34 @@ class Mempool {
      * or creates a new session if it doesn't already exist.
      * @param {string} address 
      */
-    generateSession(address) {
+    generatePendingSession(address) {
 
     }
 
     /**
-     * Returns the session (essentially a timestamp) that is still active for the given address.
+     * Moves the session associated with this address (if it exists) from the pending
+     * sessions to the validated sessions
+     * @param {string} address 
+     */
+    approveSession(address) {
+
+    }
+
+    /**
+     * Returns the pending session (essentially a timestamp) that is still active for the given address.
      * Otherwise, returns null;
      * @param {string} address 
      */
-    getSession(address) {
+    getPendingSession(address) {
+
+    }
+
+    /**
+     * Returns the validated session (essentially a timestamp) that is still active for the given address.
+     * Otherwise, returns null;
+     * @param {string} address 
+     */
+    getValidatedSession(address) {
 
     }
 }
