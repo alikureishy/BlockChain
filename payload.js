@@ -2,31 +2,71 @@
 const StarRecord = require('star.js').StarRecord;
 const Star = require('star.js').Star;
 
-class GetStarByHeightRequest {
+class SingleStarResponse {
+    /**
+     * Returns a JSON for a star block
+     * For example:
+     *   {
+     *       "hash": "a59e9e399bc17c2db32a7a87379a8012f2c8e08dd661d7c0a6a4845d4f3ffb9f",
+     *       "height": 1,
+     *       "body": {
+     *           "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ",
+     *           "star": {
+     *                   "ra": "16h 29m 1.0s",
+     *                   "dec": "-26° 29' 24.9",
+     *                   "story": 
+     *           "466f756e642073746172207573696e672068747470733a2f2f7777772e676f6f676c652e636f6d2f736b792f",
+     *                   "storyDecoded": "Found star using https://www.google.com/sky/"
+     *               }
+     *       },
+     *       "time": "1532296234",
+     *       "previousBlockHash": "49cce61ec3e6ae664514d5fa5722d86069cf981318fc303750ce66032d0acff3"
+     *   }
+     */
+    toJSON() {
+        return JSON.stringify(this.star);
+    }
 
-}
-class GetStarByHeightResponse {
-
-}
-class GetStarCountRequest {
-
-}
-class GetStarCountResponse {
-
-}
-class GetStarsByAddressRequest {
-
-}
-class GetStarsByAddressResponse {
-
-}
-class GetStarByBlockHashRequest {
-
-}
-class GetStarByBlockHashResponse {
-    
+    /**
+     * Constructor
+     */
+    constructor(block) {
+        this.star = StarRecord.decodeStarBlock(block);
+    }
 }
 
+class MultiStarResponse {
+    /**
+     * Returns a JSON for the current instance
+     * For example:
+     * {
+     *  [
+     *      <Block1>,
+     *      <Block2>,
+     *      ...
+     *  ]
+     * }
+     */
+    toJSON() {
+        return JSON.stringify(this.stars);
+    }
+
+    /**
+     * Constructor
+     */
+    constructor() {
+        this.stars = [];
+    }
+
+    /**
+     * Collects the stars to be returned to the client
+     * @param {Block} block 
+     */
+    addStar(block) {
+        block = StarRecord.decodeStarBlock(block);
+        this.stars.add(block);
+    }
+}
 
 class SessionRequest {
 
@@ -43,7 +83,7 @@ class SessionRequest {
         try {
             JSON.parse(blob, function(field, value) {
                 if (field=='address') {
-                request.address = value;
+                    request.address = value;
                 }
             });
         } catch (error) {
@@ -94,7 +134,7 @@ class SessionResponse {
 
 class AuthenticationRequest {
     /**
-     * Returns a validate request from the provided json
+     * Builds a validate request from the provided json
      * For example:
      * {
      *    "address":"19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL",
@@ -185,29 +225,20 @@ class RegisterStarRequest {
      */
     static fromJSON(json) {
         let starRecord = StarRecord.fromJSON(json);
-
-        // Encode the star's story field:
-        starRecord.star.story = null;
-
         return new RegisterStarRequest(starRecord);
     }
 
     constructor(starRecord) {
-        this.starRecord = starRecord;
-    }
-}
-
-class RegisterStarResponse {
-    constructor(blob) {
-
+        this.starRecord = StarRecord.encodeStarRecord(starRecord);
     }
 }
 
 module.exports = {
-    RegisterStarResponse : RegisterStarResponse,
-    RegisterStarRequest : RegisterStarRequest,
-    AuthenticationResponse : AuthenticationResponse,
-    AuthenticationRequest : AuthenticationRequest,
+    SingleStarResponse : SingleStarResponse,
+    MultiStarResponse : MultiStarResponse,
     SessionRequest : SessionRequest,
-    SessionResponse : SessionResponse
+    SessionResponse : SessionResponse,
+    AuthenticationRequest : AuthenticationRequest,
+    AuthenticationResponse : AuthenticationResponse,
+    RegisterStarRequest : RegisterStarRequest
 }

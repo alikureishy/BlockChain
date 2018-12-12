@@ -39,40 +39,6 @@ class BlockChainServer {
 
         /**
          * ========================================================
-         * Returns the block with the specified height
-         * ========================================================
-         */
-        this.server.route({
-            method:'GET',
-            path:'/block/{height}',
-            handler:function(request,h) {
-                return h.redirect("/stars/star");
-            }
-        });
-        this.server.route({
-            method:'GET',
-            path:'/stars/{height}',
-            handler:function(request,h) {
-                return (async function get(req, handler) {
-                    let height = req.params.height;
-                    let blockchain = await self.blockChainPromise;
-                    try {
-                        let block = await blockchain.getBlockAnd(height);
-                        if (block==null) {
-                            return h.response("Requested block not found: " + height).code(404);
-                        } else {
-                            starBlock = StarBlock(block);
-                            return h.response(starBlock.toJSON()).code(200);
-                        }
-                    } catch (error) {
-                        return h.response(error).code(500);
-                    }
-                }) (request,h);
-            }
-        });
-
-        /**
-         * ========================================================
          * Returns the number of blocks in the chain
          * ========================================================
          */
@@ -101,6 +67,40 @@ class BlockChainServer {
 
         /**
          * ========================================================
+         * Returns the block with the specified height
+         * ========================================================
+         */
+        this.server.route({
+            method:'GET',
+            path:'/block/{height}',
+            handler:function(request,h) {
+                return h.redirect("/stars/star");
+            }
+        });
+        this.server.route({
+            method:'GET',
+            path:'/stars/{height}',
+            handler:function(request,h) {
+                return (async function get(req, handler) {
+                    let height = req.params.height;
+                    let blockchain = await self.blockChainPromise;
+                    try {
+                        let block = await blockchain.getBlockAnd(height);
+                        if (block==null) {
+                            return h.response("Requested block not found: " + height).code(404);
+                        } else {
+                            let response = new Payload.SingleStarResponse(block);
+                            return h.response(response.toJSON()).code(200);
+                        }
+                    } catch (error) {
+                        return h.response(error).code(500);
+                    }
+                }) (request,h);
+            }
+        });
+
+        /**
+         * ========================================================
          * Retrieves a star block based on the block hash
          * ========================================================
          */
@@ -116,8 +116,8 @@ class BlockChainServer {
                         if (block==null) {
                             return h.response("Requested star record not found: " + height).code(404);
                         } else {
-                            starBlock = new StarBlock(block);
-                            return h.response(starBlock.toJSON()).code(200);
+                            let response = new Payload.SingleStarResponse(block);
+                            return h.response(response.toJSON()).code(200);
                         }
                     } catch (error) {
                         return h.response(error).code(500);
@@ -139,51 +139,24 @@ class BlockChainServer {
                     let address = req.params.address;
                     let blockchain = await self.blockChainPromise;
                     try {
-                        stars = [];
+                        response = new Payload.MultiStarResponse();
                         for (i = 0; true; i++) {
                             let block = await blockchain.getBlockAnd(i);
                             if (block==null) {
                                 break; // We've exhausted all the blocks (assuming increasing sequence)
                             } else {
-                                let starBlock = new StarBlock(block);
                                 if (starBlock.getStarData().address == address) {
-                                    stars.add(starBlock.toJSON());
+                                    response.addStar(block);
                                 }
                             }
                         }
-                        return h.response(stars).code(200);
+                        return h.response(response.toJSON()).code(200);
                     } catch (error) {
                         return h.response(error).code(500);
                     }
                 }) (request,h);
             }
         });
-
-        // /**
-        //  * ========================================================
-        //  * Adds a raw block to the blockchain and returns the finalized block
-        //  * ========================================================
-        //  */
-        // this.server.route({
-        //     method:'POST',
-        //     path:'/block',
-        //     handler:function(request,h) {
-        //         return (async function add(req, handler) {
-        //             let block = Block.fromBlob(req.payload);
-        //             if (block == null || block.body == null || block.body == '') {
-        //                 return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
-        //             } else {
-        //                 try {
-        //                     let blockchain = await self.blockChainPromise;
-        //                     let newblock = await blockchain.addBlockAnd(block);
-        //                     return h.response(newblock).code(201);
-        //                 } catch (error) {
-        //                     return h.response(error).code(500);
-        //                 }
-        //             }
-        //         }) (request,h);
-        //     }
-        // });
 
         /**
          * ========================================================
@@ -216,12 +189,11 @@ class BlockChainServer {
                                 return h.response("Session has expired or was never created. Please initiate a validation request first.").code(404);
                             } else {
                                 // Create a new block with this star's data encoded into the 'body' field and add it to the blockchain
-                                starRecord = registerStarReq.starRecord;
-                                let newBlock = new Block(starRecord.toJSON());
+                                let newBlock = new Block(registerStarReq.starRecord.toJSON());
                                 newBlock = await blockchain.addBlockAnd(block);
-
                                 assert (block != null, "Failed to add block");
-                                return h.response(newBlock).code(201);
+                                let response = new SingleStarResponse(block);
+                                return h.response(response.toJSON()).code(201);
                             }
                         } catch (error) {
                             return h.response(error).code(500);
@@ -278,14 +250,13 @@ class BlockChainServer {
                     } else {
                         try {
                             let address = authenticationReq.address;
-                            let message = authenticationReq.message;
-                            let signedMessage = authenticationReq.signedMessage;
+                            let signature = authenticationReq.signedMessage;
                             let timeWindow = self.mempool.getSessionWindow();
                             let timestamp = self.mempool.getSession(address);
                             if (timestamp==null) {
                                 return h.response("Session has expired or was never created. Please initiate a validation request first.").code(404);
                             } else {
-                                let isAuthenticated = self.authenticator.verifyAnswer(message, signedMessage, address);
+                                let isAuthenticated = self.authenticator.verifyAnswer(address, timestamp, signature, address);
                                 let authenticationResp = new Payload.AuthenticationResponse(isAuthenticated, address, timestamp, message, timeWindow)
                                 if (isAuthenticated) {
                                     return h.response(authenticationResp.toJSON()).code(202);
@@ -346,19 +317,45 @@ module.exports = {
 }
 
 
+        // /**
+        //  * ========================================================
+        //  * Adds a raw block to the blockchain and returns the finalized block
+        //  * ========================================================
+        //  */
+        // this.server.route({
+        //     method:'POST',
+        //     path:'/block',
+        //     handler:function(request,h) {
+        //         return (async function add(req, handler) {
+        //             let block = Block.fromBlob(req.payload);
+        //             if (block == null || block.body == null || block.body == '') {
+        //                 return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
+        //             } else {
+        //                 try {
+        //                     let blockchain = await self.blockChainPromise;
+        //                     let newblock = await blockchain.addBlockAnd(block);
+        //                     return h.response(newblock).code(201);
+        //                 } catch (error) {
+        //                     return h.response(error).code(500);
+        //                 }
+        //             }
+        //         }) (request,h);
+        //     }
+        // });
 
+        // ***********************************************************
 
-            // ,
-            // options: {
-            //     handler:function(request,h) {
-            //         return h.response("Invalid content-type. The 'Content-Type' header MUST either be excluded, or specified as 'text/plain' ").code(415);
-            //     },
-            //     validate: {
-            //         headers: {
-            //             'Content-Type': "text/plain"
-            //         },
-            //         options: {
-            //             allowUnknown: true
-            //         }
-            //     }
-            // }
+        // ,
+        // options: {
+        //     handler:function(request,h) {
+        //         return h.response("Invalid content-type. The 'Content-Type' header MUST either be excluded, or specified as 'text/plain' ").code(415);
+        //     },
+        //     validate: {
+        //         headers: {
+        //             'Content-Type': "text/plain"
+        //         },
+        //         options: {
+        //             allowUnknown: true
+        //         }
+        //     }
+        // }

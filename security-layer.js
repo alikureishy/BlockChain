@@ -3,14 +3,32 @@
  */
 class Authenticator {
 
+    /**
+     * Constructor
+     */
     constructor() {
     }
 
+    /**
+     * Generates a challenge string for the given address and timestamp
+     * @param {string} address
+     * @param {long} time 
+     */
     generateChallenge(address, time) {
         return "{0}:{1}:starRegistry".format(address, time);
     }
 
-    verifyAnswer(message, signedMessage, walletKey) {
+    /**
+     * Verifies the challenge string that was previously 
+     * @param {string} address 
+     * @param {long} time 
+     * @param {string} signedMessage 
+     * @param {string} walletKey 
+     */
+    verifyAnswer(address, time, signedMessage, walletKey) {
+        let challenge = this.generateChallenge(address, time);
+
+        // Authenticate the signature:
 
     }
 }

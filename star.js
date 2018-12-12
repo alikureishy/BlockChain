@@ -35,6 +35,16 @@ class StarRecord {
         return JSON.stringify(this);
     }
 
+    static encodeStarRecord(starRecord) {
+        // Decode star's story
+        let encoded = null;
+    }
+
+    static decodeStarBlock(block) {
+        let starRecord = StarRecord.fromJSON(block.body);
+        let encoded = null;
+    }
+
     constructor(address, star) {
         this.address = address;
         this.star = star;
@@ -88,41 +98,6 @@ class Star {
         this.decodedStory = null;
     }
 }
-
-// class StarBlock {
-//     static encode(starJSON) {
-
-//     }
-
-//     static decode(starJSON) {
-        
-//     }
-
-//     static fromBlock(block) {
-//         this = new StarBlock();
-//         this.block = block;
-
-//         // Decode the story in the Star info
-//         let starData = StarData.fromJSON(this.block.body)
-//         let encodedStory = starData.story;
-//         let decodedStory = hex2ascii(encodedStory);
-//         starData.decodedStory = decodedStory;
-//         let newBody = starData.toJSON();
-//         this.block.body = newBody;
-//     }
-
-//     toJSON() {
-//         return JSON.stringify(this.block);
-//     }
-
-//     asStarBlock() {
-//         return this.starData;
-//     }
-
-//     asGenericBlock() {
-//         return this.block;
-//     }
-// }
 
 module.exports = {
     Star : Star,
