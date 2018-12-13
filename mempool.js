@@ -1,3 +1,5 @@
+var Dict = require("collections/dict");
+
 /**
  * This is the Mempool class that stores pending star-registry requests
  * after initiating a 5-min countdown for an authenticated user after
@@ -25,8 +27,8 @@ class Mempool {
      * Constructor
      */
     constructor() {
-        this.pendingSessions = [];
-        this.validatedSessions = [];   
+        this.pendingSessions = {};
+        this.validatedSessions = {};   
     }
 
     /**
@@ -49,7 +51,7 @@ class Mempool {
      * @param {string} address 
      */
     generatePendingSession(address) {
-
+        let timestamp = 
     }
 
     /**

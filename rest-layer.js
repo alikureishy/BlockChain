@@ -140,7 +140,7 @@ class BlockChainServer {
                     let blockchain = await self.blockChainPromise;
                     try {
                         response = new Payload.MultiStarResponse();
-                        for (i = 0; true; i++) {
+                        for (i = 1; true; i++) {    // Making sure to skip over the genesis block
                             let block = await blockchain.getBlockAnd(i);
                             if (block==null) {
                                 break; // We've exhausted all the blocks (assuming increasing sequence)

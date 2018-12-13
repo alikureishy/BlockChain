@@ -1,3 +1,6 @@
+const bitcoin = require('bitcoinjs-lib');
+const bitcoinMessage = require('bitcoinjs-message'); 
+
 /**
  * Authenticator class to perform signature verification
  */
@@ -29,10 +32,21 @@ class Authenticator {
         let challenge = this.generateChallenge(address, time);
 
         // Authenticate the signature:
-
+        let isValid = bitcoinMessage.verify(challenge, address, signature);
+        return isValid;
     }
 }
 
 module.exports = {
     Authenticator : Authenticator
 }
+
+//
+// var bitcoin = require('bitcoinjs-lib') // v4.0.1 or later
+// const privateKey = keyPair.privateKey;
+// var bitcoinMessage = require('bitcoinjs-message')
+// var keyPair = bitcoin.ECPair.fromWIF('5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss');
+// var privateKey = keyPair.privateKey;
+// var message = 'This is an example of a signed message.';
+// var signature = bitcoinMessage.sign(message, privateKey, keyPair.compressed);
+// console.log(signature.toString('base64'));

@@ -36,13 +36,18 @@ class StarRecord {
     }
 
     static encodeStarRecord(starRecord) {
-        // Decode star's story
-        let encoded = null;
+        let story = starRecord.star.story;
+        let buf = new Buffer(story);
+        let hex = buf.toString('hex');
+        starRecord.star.story = encoded;
     }
 
     static decodeStarBlock(block) {
         let starRecord = StarRecord.fromJSON(block.body);
-        let encoded = null;
+        let encoded = starRecord.story;
+        let buf = new Buffer(encoded, 'hex');
+        let decoded = buf.toString('ascii');
+        starRecord.storyDecoded = decoded;
     }
 
     constructor(address, star) {
