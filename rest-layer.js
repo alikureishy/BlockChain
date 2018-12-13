@@ -263,6 +263,7 @@ class BlockChainServer {
                                 let newBlock = new Block(registerStarReq.starRecord.toJSON());
                                 newBlock = await blockchain.addBlockAnd(block);
                                 assert (block != null, "Failed to add block");
+                                self.mempool.evict(address);
                                 let response = new SingleStarResponse(newBlock);
                                 return h.response(response.toJSON()).code(201);
                             }

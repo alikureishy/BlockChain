@@ -2,8 +2,8 @@ var Dict = require("collections/dict");
 
 /**
  * This is the Mempool class that stores pending star-registry requests
- * after initiating a 5-min countdown for an authenticated user after
- * validating its wallet address/signature.
+ * after initiating a 5-min countdown for an authenticating user, and
+ * 30 mins for users that have validated their wallet address/signature.
  */
 class Mempool {
     /**
@@ -27,8 +27,25 @@ class Mempool {
      * Constructor
      */
     constructor() {
-        this.pendingSessions = {};
-        this.validatedSessions = {};   
+        this.pendingSessions = new Map();
+        this.validatedSessions = new Map();
+
+        this.cleanerFunction = function(map, window) {
+            let currentTime = new Date().getTime();
+            let dropList = [];
+            for (var [key, value] of map) {
+                if (value < (currentTime - window)) {
+                    dropList.add(key);
+                }
+            }
+            for (var key of dropList) {
+                map.delete(key);
+            }
+        }
+
+        // Create the session cleaners:
+        this.pendingSessionCleaner = setInterval(cleaner, 10 /*secs*/ * 1000 /*millis*/, this.pendingSessions, this.getPendingSessionWindow());
+        this.validatedSessionCleaner = setInterval(cleaner, 10 /*secs*/ * 1000 /*millis*/, this.validatedSessions, this.getValidatedSessionWindow());
     }
 
     /**
@@ -51,7 +68,11 @@ class Mempool {
      * @param {string} address 
      */
     generatePendingSession(address) {
-        let timestamp = 
+        currentTime = new Date().getTime();
+        let timestamp = this.pendingSessions.get(address);
+        if (timestamp == null) timestamp = currentTime;
+        this.pendingSessions.set(address, timestamp); // Resets the pending session window if it already exists
+        return timestamp;
     }
 
     /**
@@ -60,7 +81,17 @@ class Mempool {
      * @param {string} address 
      */
     approveSession(address) {
+        currentTime = new Date().getTime();
 
+        // Ensure the session is a pending session
+        if (!this.pendingSessions.has(address)) {
+            return null;
+        } else {
+            this.pendingSessions.delete(address);
+            // Create an approved session:
+            this.validatedSessions.set(address, currentTime);
+            return currentTime;
+        }
     }
 
     /**
@@ -69,7 +100,18 @@ class Mempool {
      * @param {string} address 
      */
     getPendingSession(address) {
-
+        if (this.pendingSessions.has(address)) {
+            let currentTime = new Date.getTime();
+            let timestamp = this.pendingSessions.get(address);
+            if (timestamp < (currentTime - this.getPendingSessionWindow())) {
+                // this.pendingSessions.delete(address);
+                return null;
+            } else {
+                return timestamp;
+            }
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -78,7 +120,22 @@ class Mempool {
      * @param {string} address 
      */
     getValidatedSession(address) {
+        if (this.validatedSessions.has(address)) {
+            let currentTime = new Date.getTime();
+            let timestamp = this.validatedSessions.get(address);
+            if (timestamp < (currentTime - this.getValidatedSessionWindow())) {
+                // this.validatedSessions.delete(address);
+                return null;
+            } else {
+                return timestamp;
+            }
+        } else {
+            return null;
+        }
+    }
 
+    evict(address) {
+        this.validatedSessions.delete(address);
     }
 }
 

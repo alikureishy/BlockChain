@@ -94,6 +94,10 @@ class Star {
         return JSON.stringify(this);
     }
 
+    getId() {
+        return "{}:{}:{}:{}".format(this.ra, this.dec, this.mag, this.cen)
+    }
+
     constructor(rightAscension, declination, centaurus, magnitude, story) {
         this.ra = rightAscension;
         this.dec = declination;

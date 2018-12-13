@@ -34,8 +34,13 @@ class Persistor {
                         var counter = 0;
                         persistor.db.createReadStream()
                         .on('data', function(data) {
-                            // console.log(">>>>", data);
-                            counter++;
+                            // Exclude metadata from the count
+                            // TODO:
+                            //  #1: Fix coupling between blockchain.js and star.js
+                            //  Modify code to add concept of namespaces
+                            if ((data.key!='HASH_LOOKUP') && (data.key!='STAR_LOOKUP')) {
+                                counter++;
+                            }
                         }).on('error', function(err) {
                             console.log(err);
                             reject(err);
@@ -71,7 +76,7 @@ class Persistor {
      *      Prints the data stored in the leveldb (in the order in which
      *      it was inserted)
      */
-    printBlobs() {
+    printBlobs(namespace=null) {
         let self = this;
         return new Promise(
             function(resolve, reject) {
@@ -79,7 +84,13 @@ class Persistor {
                 var counter = 0;
                 self.db.createReadStream()
                 .on('data', function(data) {
-                    console.log(">>>>", data);
+                    // Exclude metadata from the count
+                    // TODO:
+                    //  #1: Fix coupling between blockchain.js and star.js
+                    //  Modify code to add concept of namespaces
+                    // if ((data.key!='HASH_LOOKUP') && (data.key!='STAR_LOOKUP')) {
+                        console.log(">>>>", data);
+                    // }
                 }).on('error', function(err) {
                     console.log(err);
                     reject(err);

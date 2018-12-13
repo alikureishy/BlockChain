@@ -5,6 +5,8 @@ const SHA256 = require('crypto-js/sha256');
 const assert = require('assert');
 const Persistor = require('./blockStore.js').Persistor;
 
+const StarRecord = require('./star.js').StarRecord;
+
 /* ===== Block Class ==============================
 |  Class with a constructor for block 			   |
 |  ===============================================*/
@@ -132,7 +134,8 @@ class Dictionary {
 
 class BlockChain{
 
-  static DICTIONARY_KEY = "DICTIONARY";
+  static HASH_LOOKUP = "HASH_LOOKUP";
+  static STAR_LOOKUP = "STAR_LOOKUP";
 
   /**
    * Promise:
@@ -143,14 +146,30 @@ class BlockChain{
     let blockChain = new BlockChain(folder);
     return blockChain.whenPersistorReady.then(
       async function(persistor) {
-        // Ensure that the lookup table exists too
-        let blob = await persistor.getBlobAnd(DICTIONARY_KEY);
+
+        // Ensure that the block-hash lookup table exists too
+        let blob = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP);
         if (blob == null) {
-          blockChain.dictionary = new Dictionary();
-          await persistor.addBlobAnd(DICTIONARY_KEY, dictionary.toString(), count=false);
+          blockChain.hashLookup = new Dictionary();
+          await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, blockChain.hashLookup.toString(), count=false);
         } else {
-          blockChain.dictionary = Dictionary.fromJSON(blob);
+          blockChain.hashLookup = Dictionary.fromJSON(blob);
         }
+
+        // Ensure that the star lookup table exists too
+        // TODO:
+        //  #1: Fix coupling between blockchain.js and star.js
+        //       Move this to a higher layer wrapper that internally delegates to blockchain
+        //       And expose a way for multiple such meta-information to be added to the blockchain
+        //       class.
+        let blob = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP);
+        if (blob == null) {
+          blockChain.starLookup = new Dictionary();
+          await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, blockChain.starLookup.toString(), count=false);
+        } else {
+          blockChain.starLookup = Dictionary.fromJSON(blob);
+        }
+
         return blockChain;
       },
       function(err) {
@@ -215,17 +234,32 @@ class BlockChain{
         return self.getBestBlockAnd().then(
           async function(bestBlock) {
             //TODO: This nested function needs to be performed within a single "transaction"
+            //    #2: Some leveldb invocations need transaction support
             newBlock.previousBlockHash = bestBlock.hash;
             newBlock.hash = newBlock.calculateHash();
+ 
+            // Update the starlookup table
+            // TODO: #1: Fix coupling between blockchain.js and star.js
+            let starRecord = StarRecord.fromJSON(newBlock.body);
+            let address = starRecord.address;
+            let starId = starRecord.star.getId();
+            // First ensure that there's no duplicate:
+            if (self.starLookup.has(starId)) {
+              console.log("Found duplicate star. Addition of this record not allowed.")
+              return null;
+            } else {
+              self.starLookup[starId] = newBlock.height;
+              await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, self.starLookup.toJSON());
+              
+              // Persist the block:
+              newBlock = await persistor.addBlobAnd(newBlock.height, newBlock);
 
-            // Persist the block:
-            newBlock = await persistor.addBlobAnd(newBlock.height, newBlock);
+              // Update the hashlookup table
+              self.hashLookup[newBlock.hash] = newBlock.height;
+              await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, self.hashLookup.toJSON());
 
-            // Update the dictionary
-            self.dictionary[newBlock.hash] = newBlock.height;
-            await persistor.updateBlobAnd(DICTIONARY_KEY, self.dictionary.toJSON());
-
-            return newBlock;
+              return newBlock;
+            }
           },
           function(err) {
             console.log(err);
