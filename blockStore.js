@@ -107,14 +107,18 @@ class Persistor {
      * 
      * @param {any} key 
      */
-  	getBlobAnd(key) {
+  	getBlobAnd(key, throwOnAbsence=true) {
         let self = this;
         return new Promise(
             function(resolve, reject) {
                 self.db.get(key, function(err, value) {
                     if(err) {
-                        console.log('Blob ' + key + ' get() failed', err);
-                        reject(err);
+                        if (throwOnAbsence) {
+                            console.log('Blob ' + key + ' get() failed', err);
+                            reject(err);
+                        } else {
+                            resolve(null);
+                        }
                     } else {
                         resolve(value);
                     }

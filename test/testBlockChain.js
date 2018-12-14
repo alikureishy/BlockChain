@@ -413,3 +413,4 @@ describe('testChainValidation', function () {
     // console.log("How to dirty: ", HOW_TO_DIRTY);
     // console.log("Expected hash errors: ", EXPECTED_HASH_ERRORS);
     // console.log("Expected link errors: ", EXPECTED_LINK_ERRORS);
+

@@ -6,11 +6,11 @@
 const Block = require('./blockChain.js').Block;
 const BlockChain = require('./blockChain.js').BlockChain;
 const Hapi=require('hapi');
-const Payload=require('payload.js');
-const Mempool = require('mempool.js').Mempool;
-const Authenticator = require('security-layer.js').Authenticator;
-const Star = require('star.js').Star;
-const StarRecord = require('star.js').StarRecord;
+const Payload=require('./payload.js');
+const Mempool = require('./mempool.js').Mempool;
+const Authenticator = require('./security-layer.js').Authenticator;
+const Star = require('./star.js').Star;
+const StarRecord = require('./star.js').StarRecord;
 
 class BlockChainServer {
 
@@ -263,7 +263,7 @@ class BlockChainServer {
                                 let newBlock = new Block(registerStarReq.starRecord.toJSON());
                                 newBlock = await blockchain.addBlockAnd(block);
                                 assert (block != null, "Failed to add block");
-                                self.mempool.evict(address);
+                                self.mempool.evict(address);     // Ensures that a user can only add one start for each session
                                 let response = new SingleStarResponse(newBlock);
                                 return h.response(response.toJSON()).code(201);
                             }
@@ -305,6 +305,8 @@ class BlockChainServer {
             await this.server.stop();
             let blockChain = await this.blockChainPromise;
             await blockChain.closeAnd();
+            this.mempool.shutdown();
+
         }
         catch (err) {
             console.log(err);

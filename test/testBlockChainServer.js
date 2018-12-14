@@ -5,7 +5,7 @@ const rimraf = require('rimraf');
 const frisby = require('frisby');
 const joi = frisby.Joi;
 
-const BlockChainServer = require('../blockChainServer.js').BlockChainServer;
+const BlockChainServer = require('../rest-layer.js').BlockChainServer;
 const Block = require('../blockChain.js').Block;
 
 /**
@@ -141,3 +141,11 @@ describe('testGetCount', function () {
         console.info("...Stopped server.");
     });
   });
+
+/*
+testHashLookup()
+testStarLookup()
+testSessionRequest()
+testValidation()
+testStarRegistry()
+*/

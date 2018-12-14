@@ -1,16 +1,20 @@
-var Dict = require("collections/dict");
 
 /**
  * This is the Mempool class that stores pending star-registry requests
  * after initiating a 5-min countdown for an authenticating user, and
  * 30 mins for users that have validated their wallet address/signature.
  */
+var singleton = null;
+
 class Mempool {
     /**
      * Static initializer
      */
-    static initialize() {
-        Mempool.singleton = null;
+    static get singleton() {
+        return singleton;
+    }
+    static set singleton(obj) {
+        singleton = obj;
     }
 
     /**
@@ -44,8 +48,8 @@ class Mempool {
         }
 
         // Create the session cleaners:
-        this.pendingSessionCleaner = setInterval(cleaner, 10 /*secs*/ * 1000 /*millis*/, this.pendingSessions, this.getPendingSessionWindow());
-        this.validatedSessionCleaner = setInterval(cleaner, 10 /*secs*/ * 1000 /*millis*/, this.validatedSessions, this.getValidatedSessionWindow());
+        this.pendingSessionCleaner = setInterval(this.cleanerFunction, 10 /*secs*/ * 1000 /*millis*/, this.pendingSessions, this.getPendingSessionWindow());
+        this.validatedSessionCleaner = setInterval(this.cleanerFunction, 10 /*secs*/ * 1000 /*millis*/, this.validatedSessions, this.getValidatedSessionWindow());
     }
 
     /**
@@ -136,6 +140,11 @@ class Mempool {
 
     evict(address) {
         this.validatedSessions.delete(address);
+    }
+
+    shutdown() {
+        clearInterval(this.pendingSessionCleaner);
+        clearInterval(this.validatedSessionCleaner);
     }
 }
 

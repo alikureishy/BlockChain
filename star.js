@@ -17,7 +17,7 @@ class StarRecord {
     static fromJSON(json) {
         var starRecord = new StarRecord();
         try {
-            JSON.parse(blob, function(field, value) {
+            JSON.parse(json, function(field, value) {
                 if (field=='address') {
                     starRecord.address = value;
                 } else if (field=='star') {

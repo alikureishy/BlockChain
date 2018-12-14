@@ -124,7 +124,7 @@ class Dictionary {
   }
 
   constructor() {
-    this.table = null;
+    this.table = new Map();
   }
 }
 
@@ -134,8 +134,8 @@ class Dictionary {
 
 class BlockChain{
 
-  static HASH_LOOKUP = "HASH_LOOKUP";
-  static STAR_LOOKUP = "STAR_LOOKUP";
+  static get HASH_LOOKUP() {return "HASH_LOOKUP";}
+  static get STAR_LOOKUP() {return "STAR_LOOKUP";}
 
   /**
    * Promise:
@@ -148,26 +148,30 @@ class BlockChain{
       async function(persistor) {
 
         // Ensure that the block-hash lookup table exists too
-        let blob = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP);
-        if (blob == null) {
-          blockChain.hashLookup = new Dictionary();
-          await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, blockChain.hashLookup.toString(), count=false);
-        } else {
-          blockChain.hashLookup = Dictionary.fromJSON(blob);
+        {
+          let blob = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP, /*throwOnAbsence=*/false);
+          if (blob == null) {
+            blockChain.hashLookup = new Dictionary();
+            await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, blockChain.hashLookup.toString(), /*count=*/false);
+          } else {
+            blockChain.hashLookup = Dictionary.fromJSON(blob);
+          }
         }
 
-        // Ensure that the star lookup table exists too
-        // TODO:
-        //  #1: Fix coupling between blockchain.js and star.js
-        //       Move this to a higher layer wrapper that internally delegates to blockchain
-        //       And expose a way for multiple such meta-information to be added to the blockchain
-        //       class.
-        let blob = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP);
-        if (blob == null) {
-          blockChain.starLookup = new Dictionary();
-          await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, blockChain.starLookup.toString(), count=false);
-        } else {
-          blockChain.starLookup = Dictionary.fromJSON(blob);
+        {
+          // Ensure that the star lookup table exists too
+          // TODO:
+          //  #1: Fix coupling between blockchain.js and star.js
+          //       Move this to a higher layer wrapper that internally delegates to blockchain
+          //       And expose a way for multiple such meta-information to be added to the blockchain
+          //       class.
+          let blob = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP, /*throwOnAbsence=*/false);
+          if (blob == null) {
+            blockChain.starLookup = new Dictionary();
+            await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, blockChain.starLookup.toString(), /*count=*/false);
+          } else {
+            blockChain.starLookup = Dictionary.fromJSON(blob);
+          }
         }
 
         return blockChain;
@@ -241,21 +245,21 @@ class BlockChain{
             // Update the starlookup table
             // TODO: #1: Fix coupling between blockchain.js and star.js
             let starRecord = StarRecord.fromJSON(newBlock.body);
-            let address = starRecord.address;
+            // let address = starRecord.address;
             let starId = starRecord.star.getId();
             // First ensure that there's no duplicate:
             if (self.starLookup.has(starId)) {
               console.log("Found duplicate star. Addition of this record not allowed.")
               return null;
             } else {
-              self.starLookup[starId] = newBlock.height;
+              self.starLookup.set(starId, newBlock.height);
               await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, self.starLookup.toJSON());
               
               // Persist the block:
               newBlock = await persistor.addBlobAnd(newBlock.height, newBlock);
 
               // Update the hashlookup table
-              self.hashLookup[newBlock.hash] = newBlock.height;
+              self.hashLookup.set(newBlock.hash, newBlock.height);
               await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, self.hashLookup.toJSON());
 
               return newBlock;
@@ -333,7 +337,7 @@ class BlockChain{
           console.log("Invalid block hash being queried: ", blockHash);
           return null;
         } else {
-          let height = self.dictionary[blockHash];
+          let height = self.dictionary.get(blockHash);
           return persistor.getBlobAnd(height).then(
             function(blob) {
               return Block.fromBlob(blob);
@@ -481,7 +485,21 @@ class BlockChain{
   }
 }
 
+// Object.defineProperty(BlockChain, 'HASH_LOOKUP', {
+//   value: 'HASH_LOOKUP',
+//   writable : false,
+//   enumerable : true,
+//   configurable : false
+// });
+// Object.defineProperty(BlockChain, 'STAR_LOOKUP', {
+//   value: 'STAR_LOOKUP',
+//   writable : false,
+//   enumerable : true,
+//   configurable : false
+// });
+
 module.exports = {
   Block : Block,
   BlockChain : BlockChain
 }
+

@@ -1,6 +1,6 @@
 
-const StarRecord = require('star.js').StarRecord;
-const Star = require('star.js').Star;
+const StarRecord = require('./star.js').StarRecord;
+const Star = require('./star.js').Star;
 
 class SingleStarResponse {
     /**
