@@ -1,4 +1,5 @@
 'use strict';
+const assert = require('assert');
 
 /**
  * See: https://www.npmjs.com/package/string-format
@@ -190,8 +191,9 @@ class BlockChainServer {
                             assert (timestamp != null, "Shoudl not be receiving a null timestamp from mempool.generateSession()")
                             let challenge = self.authenticator.generateChallenge(address, timestamp);
                             let sessionResp = new Payload.SessionResponse(address, timestamp, challenge, timeWindow);
-                            return h.response(sessionResp.toJSON()).code(201);
+                            return h.response(sessionResp).code(201);
                         } catch (error) {
+                            console.error(error);
                             return h.response(error).code(500);
                         }
                     }

@@ -122,9 +122,9 @@ class SessionResponse {
      *     "validationWindow": 300
      * }
      */
-    toJSON() {
-        return JSON.stringify(this);
-    }
+    // toJSON() {
+    //     return JSON.stringify(this);
+    // }
 
     /**
      * Constructor

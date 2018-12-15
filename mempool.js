@@ -44,7 +44,7 @@ class Mempool {
             let dropList = [];
             for (var [key, value] of map) {
                 if (value < (currentTime - window)) {
-                    dropList.add(key);
+                    dropList.push(key);
                 }
             }
             for (var key of dropList) {
@@ -62,14 +62,14 @@ class Mempool {
      * Returns the expiry period for pending sessions
      */
     getPendingSessionWindow() {
-        return 300; // seconds
+        return 300/*seconds*/ * 1000/*millis*/;
     }
 
     /**
      * Returns the expiry period for validated sessions
      */
     getValidatedSessionWindow() {
-        return 1800; // seconds
+        return 1800/*seconds*/ * 1000/*millis*/;
     }
 
     /**
@@ -78,7 +78,7 @@ class Mempool {
      * @param {string} address 
      */
     generatePendingSession(address) {
-        currentTime = new Date().getTime();
+        let currentTime = new Date().getTime();
         let timestamp = this.pendingSessions.get(address);
         if (timestamp == null) {
             timestamp = currentTime;
@@ -96,7 +96,7 @@ class Mempool {
      * @param {string} address 
      */
     approveSession(address) {
-        currentTime = new Date().getTime();
+        let currentTime = new Date().getTime();
 
         // Ensure the session is a pending session
         if (!this.pendingSessions.has(address)) {
