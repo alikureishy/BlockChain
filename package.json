@@ -1,6 +1,6 @@
 {
   "name": "blockchain",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This project is a work in progress. I will be gradually adding additional functionality, culminating (ideally) in a asset-based private blockchain implementation.",
   "main": "test.js",
   "directories": {
@@ -24,6 +24,8 @@
     "joi": "^14.1.0",
     "level": "^4.0.0",
     "mocha": "^5.2.0",
+    "mocha-steps": "^1.1.0",
+    "mochawesome": "^3.1.1",
     "node-fetch": "^2.3.0",
     "rimraf": "^2.6.2",
     "string-format": "^2.0.0"

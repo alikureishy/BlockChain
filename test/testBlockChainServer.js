@@ -5,6 +5,7 @@ const rimraf = require('rimraf');
 const frisby = require('frisby');
 const joi = frisby.Joi;
 const format = require('string-format');
+const fetch = require('node-fetch');            // https://www.npmjs.com/package/node-fetch#json
 
 const BlockChainServer = require('../rest-layer.js').BlockChainServer;
 const Block = require('../blockChain.js').Block;
@@ -12,6 +13,7 @@ const Star = require('../star.js').Star;
 const StarRecord = require('../star.js').StarRecord;
 const Payload = require('../payload.js');
 const Authenticator = require('../security-layer.js').Authenticator;
+
 /**
  * Test to verify the GET (count) REST-API works
  * See: https://github.com/vlucas/frisby for expectation options
