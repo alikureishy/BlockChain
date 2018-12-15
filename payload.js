@@ -37,7 +37,7 @@ class SingleStarResponse {
      */
     constructor(block) {
         if (block.isGenesisBlock()) {
-            this.starblock = block;
+            this.starBlock = block;
         } else {
             this.starBlock = StarRecord.decodeStarBlock(block);
         }

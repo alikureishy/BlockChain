@@ -3,7 +3,6 @@
 |  =========================================================*/
 const SHA256 = require('crypto-js/sha256');
 const assert = require('assert');
-const Persistor = require('./blockStore.js').Persistor;
 
 /**
  * See: https://www.npmjs.com/package/string-format
@@ -12,6 +11,8 @@ const format = require('string-format');
 format.extend(String.prototype, {})
 
 const StarRecord = require('./star.js').StarRecord;
+const Persistor = require('./blockStore.js').Persistor;
+const Utils = require('./utils.js');
 
 /* ===== Block Class ==============================
 |  Class with a constructor for block 			   |
@@ -142,7 +143,7 @@ class BlockChain{
             blockChain.hashLookup = new Map();
             await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(blockChain.hashLookup), /*count=*/false);
           } else {
-            blockChain.hashLookup = Map.from(blob);
+            blockChain.hashLookup = Utils.jsonToMap(blob);
           }
         }
 
@@ -158,7 +159,7 @@ class BlockChain{
             blockChain.starLookup = new Map();
             await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(blockChain.starLookup), /*count=*/false);
           } else {
-            blockChain.starLookup = Map.from(blob);
+            blockChain.starLookup = Utils.jsonToMap(blob);
           }
         }
 

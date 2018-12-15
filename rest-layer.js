@@ -60,9 +60,11 @@ class BlockChainServer {
             path:'/stars/count',
             handler:function(request,h) {
                 return (async function get(req, handler) {
+                    console.log("GET:/stars/count...");
                     let blockchain = await self.blockChainPromise;
                     try {
                         let count = await blockchain.getBlockCountAnd();
+                        console.log("...GET:/stars/count");
                         return count;
                     } catch (error) {
                         return h.response(error).code(500);
@@ -80,16 +82,16 @@ class BlockChainServer {
             method:'GET',
             path:'/block/{height}',
             handler:function(request,h) {
-                return h.redirect("/stars/star");
+                return h.redirect("/stars/{}".format(request.params.height));
             }
         });
         this.server.route({
             method:'GET',
             path:'/stars/{height}',
             handler:function(request,h) {
+                console.log("GET:/stars/{height}");
                 return (async function get(req, handler) {
                     let height = req.params.height;
-                    console.log("####GET: \n{}".format(req.params.height));
                     let blockchain = await self.blockChainPromise;
                     try {
                         let block = await blockchain.getBlockAnd(height);
@@ -97,6 +99,7 @@ class BlockChainServer {
                             return h.response("Requested block not found: " + height).code(404);
                         } else {
                             let response = new Payload.SingleStarResponse(block);
+                            console.log(response.toJSON());
                             return h.response(response.toJSON()).code(200);
                         }
                     } catch (error) {
