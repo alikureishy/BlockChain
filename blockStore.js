@@ -67,6 +67,7 @@ class Persistor {
      */
     constructor(folder) {
         this.db = level(folder);
+        this.db.open();
         this.blobCount = 0;
         this.ensureInitialized = null;
     }

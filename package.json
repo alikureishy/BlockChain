@@ -1,7 +1,7 @@
 {
   "name": "blockchain",
   "version": "1.0.0",
-  "description": "This project is a work in progress. I will be gradually adding additional functionality, culminating (ideally) in a fully functional blockchain implementation.",
+  "description": "This project is a work in progress. I will be gradually adding additional functionality, culminating (ideally) in a asset-based private blockchain implementation.",
   "main": "test.js",
   "directories": {
     "test": "test"
@@ -24,7 +24,9 @@
     "joi": "^14.1.0",
     "level": "^4.0.0",
     "mocha": "^5.2.0",
-    "rimraf": "^2.6.2"
+    "node-fetch": "^2.3.0",
+    "rimraf": "^2.6.2",
+    "string-format": "^2.0.0"
   },
   "repository": {
     "type": "git",

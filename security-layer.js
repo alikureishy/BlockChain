@@ -1,3 +1,9 @@
+/**
+ * See: https://www.npmjs.com/package/string-format
+ */
+const format = require('string-format');
+format.extend(String.prototype, {})
+
 const bitcoin = require('bitcoinjs-lib');
 const bitcoinMessage = require('bitcoinjs-message'); 
 
@@ -18,7 +24,7 @@ class Authenticator {
      * @param {long} time 
      */
     generateChallenge(address, time) {
-        return "{0}:{1}:starRegistry".format(address, time);
+        return '{0}:{1}:starRegistry'.format(address, time);
     }
 
     /**

@@ -1,3 +1,8 @@
+/**
+ * See: https://www.npmjs.com/package/string-format
+ */
+const format = require('string-format');
+format.extend(String.prototype, {})
 
 const StarRecord = require('./star.js').StarRecord;
 const Star = require('./star.js').Star;
@@ -24,14 +29,18 @@ class SingleStarResponse {
      *   }
      */
     toJSON() {
-        return JSON.stringify(this.star);
+        return JSON.stringify(this.starBlock);
     }
 
     /**
      * Constructor
      */
     constructor(block) {
-        this.star = StarRecord.decodeStarBlock(block);
+        if (block.isGenesisBlock()) {
+            this.starblock = block;
+        } else {
+            this.starBlock = StarRecord.decodeStarBlock(block);
+        }
     }
 }
 
@@ -79,9 +88,9 @@ class SessionRequest {
      * @param {string} json
      */
     static fromJSON(json) {
-        var request = new ValidationRequest();
+        var request = new SessionRequest();
         try {
-            JSON.parse(blob, function(field, value) {
+            JSON.parse(json, function(field, value) {
                 if (field=='address') {
                     request.address = value;
                 }
@@ -163,7 +172,7 @@ class AuthenticationRequest {
      * 
      * @param {string} address (null)
      */
-    constructor() {
+    constructor(address=null, signature=null) {
         this.address = null;
         this.signature = null;
     }
@@ -185,9 +194,9 @@ class AuthenticationResponse {
      *     }
      * }
      */
-    toJSON() {
-        return JSON.stringify(this);
-    }
+    // toJSON() {
+    //     return JSON.stringify(this);
+    // }
 
     /**
      * Constructor

@@ -1,3 +1,8 @@
+/**
+ * See: https://www.npmjs.com/package/string-format
+ */
+const format = require('string-format');
+format.extend(String.prototype, {})
 
 class StarRecord {
     /**
@@ -31,15 +36,16 @@ class StarRecord {
         return starRecord;
     }
 
-    toJSON() {
-        return JSON.stringify(this);
-    }
+    // toJSON() {
+    //     return JSON.stringify(this);
+    // }
 
     static encodeStarRecord(starRecord) {
         let story = starRecord.star.story;
         let buf = new Buffer(story);
         let hex = buf.toString('hex');
-        starRecord.star.story = encoded;
+        starRecord.star.story = hex;
+        return starRecord;
     }
 
     static decodeStarBlock(block) {
@@ -48,6 +54,8 @@ class StarRecord {
         let buf = new Buffer(encoded, 'hex');
         let decoded = buf.toString('ascii');
         starRecord.storyDecoded = decoded;
+        block.body = starRecord.toJSON();
+        return block;
     }
 
     constructor(address, star) {

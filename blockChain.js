@@ -5,6 +5,12 @@ const SHA256 = require('crypto-js/sha256');
 const assert = require('assert');
 const Persistor = require('./blockStore.js').Persistor;
 
+/**
+ * See: https://www.npmjs.com/package/string-format
+ */
+const format = require('string-format');
+format.extend(String.prototype, {})
+
 const StarRecord = require('./star.js').StarRecord;
 
 /* ===== Block Class ==============================
@@ -73,6 +79,14 @@ class Block{
   }
 
   /**
+   * Returns whether the given block is a genesis block (to encapsulate the
+   * underlying implementation from the caller)
+   */
+  isGenesisBlock() {
+    return this.height == 0;
+  }
+
+  /**
    * Recalculates the hash of the block (but does not change the block)
    */
   calculateHash() {
@@ -102,32 +116,6 @@ class Block{
   }
 }
 
-class Dictionary {
-
-  static fromJSON(json) {
-    var dictionary = new Dictionary();
-    try {
-      JSON.parse(blob, function(field, value) {
-        if (field=='table') {
-          dictionary.table = value;
-        }
-      });
-    } catch (error) {
-      console.error(error);
-      dictionary = null;
-    }
-    return dictionary;
-  }
-
-  toJSON() {
-    return JSON.stringify(this);
-  }
-
-  constructor() {
-    this.table = new Map();
-  }
-}
-
 /* ===== Blockchain Class ==========================
 |  Class with a constructor for new blockchain 		|
 |  ================================================*/
@@ -151,10 +139,10 @@ class BlockChain{
         {
           let blob = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP, /*throwOnAbsence=*/false);
           if (blob == null) {
-            blockChain.hashLookup = new Dictionary();
-            await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, blockChain.hashLookup.toString(), /*count=*/false);
+            blockChain.hashLookup = new Map();
+            await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(blockChain.hashLookup), /*count=*/false);
           } else {
-            blockChain.hashLookup = Dictionary.fromJSON(blob);
+            blockChain.hashLookup = Map.from(blob);
           }
         }
 
@@ -167,10 +155,10 @@ class BlockChain{
           //       class.
           let blob = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP, /*throwOnAbsence=*/false);
           if (blob == null) {
-            blockChain.starLookup = new Dictionary();
-            await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, blockChain.starLookup.toString(), /*count=*/false);
+            blockChain.starLookup = new Map();
+            await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(blockChain.starLookup), /*count=*/false);
           } else {
-            blockChain.starLookup = Dictionary.fromJSON(blob);
+            blockChain.starLookup = Map.from(blob);
           }
         }
 
@@ -253,14 +241,14 @@ class BlockChain{
               return null;
             } else {
               self.starLookup.set(starId, newBlock.height);
-              await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, self.starLookup.toJSON());
+              await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(self.starLookup));
               
               // Persist the block:
               newBlock = await persistor.addBlobAnd(newBlock.height, newBlock);
 
               // Update the hashlookup table
               self.hashLookup.set(newBlock.hash, newBlock.height);
-              await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, self.hashLookup.toJSON());
+              await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup));
 
               return newBlock;
             }

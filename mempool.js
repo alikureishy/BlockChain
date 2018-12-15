@@ -1,3 +1,8 @@
+/**
+ * See: https://www.npmjs.com/package/string-format
+ */
+const format = require('string-format');
+format.extend(String.prototype, {})
 
 /**
  * This is the Mempool class that stores pending star-registry requests
@@ -44,6 +49,7 @@ class Mempool {
             }
             for (var key of dropList) {
                 map.delete(key);
+                console.log("Mempool (cleanerFunction): Cleared session {} after {} second window".format(key, window))
             }
         }
 
@@ -74,7 +80,12 @@ class Mempool {
     generatePendingSession(address) {
         currentTime = new Date().getTime();
         let timestamp = this.pendingSessions.get(address);
-        if (timestamp == null) timestamp = currentTime;
+        if (timestamp == null) {
+            timestamp = currentTime;
+            console.log("Mempool (generatePendingSession): Creating new pending session for {} starting {}".format(address, timestamp))
+        } else {
+            console.log("Mempool (generatePendingSession): Returning existing pending session for {} started at {}".format(address, timestamp))
+        }
         this.pendingSessions.set(address, timestamp); // Resets the pending session window if it already exists
         return timestamp;
     }
@@ -89,11 +100,13 @@ class Mempool {
 
         // Ensure the session is a pending session
         if (!this.pendingSessions.has(address)) {
+            console.log("Mempool (approveSession): No pending session exists for {} for approval".format(address))
             return null;
         } else {
             this.pendingSessions.delete(address);
             // Create an approved session:
             this.validatedSessions.set(address, currentTime);
+            console.log("Mempool (approveSession): Moved pending session for {} to validated queue at {}".format(address, currentTime))
             return currentTime;
         }
     }
@@ -108,12 +121,14 @@ class Mempool {
             let currentTime = new Date.getTime();
             let timestamp = this.pendingSessions.get(address);
             if (timestamp < (currentTime - this.getPendingSessionWindow())) {
+                console.log("Mempool (getPendingSession): Pending session for {} has already expired. Clearing...".format(address))
                 // this.pendingSessions.delete(address);
                 return null;
             } else {
                 return timestamp;
             }
         } else {
+            console.log("Mempool (getPendingSession): No existing pending session exists for {}".format(address))
             return null;
         }
     }
@@ -129,20 +144,24 @@ class Mempool {
             let timestamp = this.validatedSessions.get(address);
             if (timestamp < (currentTime - this.getValidatedSessionWindow())) {
                 // this.validatedSessions.delete(address);
+                console.log("Mempool (getValidatedSession): Pending session for {} has already expired. Clearing...".format(address))
                 return null;
             } else {
                 return timestamp;
             }
         } else {
+            console.log("Mempool (getValidatedSession): No existing pending session exists for {}".format(address))
             return null;
         }
     }
 
     evict(address) {
+        console.log("Mempool (evict): Validated session for {} has been consumed".format(address))
         this.validatedSessions.delete(address);
     }
 
     shutdown() {
+        console.log("Mempool (shutdown): Shutting down cleaners")
         clearInterval(this.pendingSessionCleaner);
         clearInterval(this.validatedSessionCleaner);
     }

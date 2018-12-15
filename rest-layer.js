@@ -1,6 +1,12 @@
 'use strict';
 
 /**
+ * See: https://www.npmjs.com/package/string-format
+ */
+const format = require('string-format');
+format.extend(String.prototype, {})
+
+/**
  * Initialize includes
  */
 const Block = require('./blockChain.js').Block;
@@ -83,6 +89,7 @@ class BlockChainServer {
             handler:function(request,h) {
                 return (async function get(req, handler) {
                     let height = req.params.height;
+                    console.log("####GET: \n{}".format(req.params.height));
                     let blockchain = await self.blockChainPromise;
                     try {
                         let block = await blockchain.getBlockAnd(height);
