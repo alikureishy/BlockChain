@@ -32,6 +32,10 @@ class SingleStarResponse {
         return JSON.stringify(this.starBlock);
     }
 
+    getPayload() {
+        return this.starBlock;
+    }
+
     /**
      * Constructor
      */
@@ -58,6 +62,10 @@ class MultiStarResponse {
      */
     toJSON() {
         return JSON.stringify(this.stars);
+    }
+
+    getPayload() {
+        return this.stars;
     }
 
     /**
@@ -102,6 +110,10 @@ class SessionRequest {
         return request;
     }
 
+    getPayload() {
+        return this;
+    }
+
     /**
      * 
      * @param {string} address (null)
@@ -122,9 +134,30 @@ class SessionResponse {
      *     "validationWindow": 300
      * }
      */
-    // toJSON() {
-    //     return JSON.stringify(this);
-    // }
+    static fromJSON(json) {
+        var response = new SessionResponse();
+        try {
+            JSON.parse(json, function(field, value) {
+                if (field=='address') {
+                    response.address = value;
+                } else if (field=='requestTimeStamp') {
+                    response.requestTimeStamp = value;
+                } else if (field=='message') {
+                    response.message = value;
+                } else if (field=='validationWindow') {
+                    response.validationWindow = value;
+                }
+            });
+        } catch (error) {
+            console.error(error);
+            response = null;
+        }
+        return response;
+    }
+
+    getPayload() {
+        return this;
+    }
 
     /**
      * Constructor
@@ -154,7 +187,7 @@ class AuthenticationRequest {
     static fromJSON(json) {
         var request = new AuthenticationRequest();
         try {
-            JSON.parse(blob, function(field, value) {
+            JSON.parse(json, function(field, value) {
                 if (field=='address') {
                     request.address = value;
                 } else if (field == 'signature') {
@@ -168,13 +201,17 @@ class AuthenticationRequest {
         return request;
     }
 
+    getPayload() {
+        return this;
+    }
+
     /**
      * 
      * @param {string} address (null)
      */
     constructor(address=null, signature=null) {
-        this.address = null;
-        this.signature = null;
+        this.address = address;
+        this.signature = signature;
     }
 
 }
@@ -194,9 +231,40 @@ class AuthenticationResponse {
      *     }
      * }
      */
-    // toJSON() {
-    //     return JSON.stringify(this);
-    // }
+    static fromJSON(json) {
+        var response = new SessionResponse();
+        try {
+            JSON.parse(json, function(field, value) {
+                if (field=='registerStar') {
+                    response.address = value;
+                } else if (field=='status') {
+                    var status = new Object;
+                    JSON.parse(value, function(f, v) {
+                        if (field=='addrees') {
+                            status.address = v;
+                        } else if (field=='requestTimeStamp') {
+                            status.requestTimeStamp = v;
+                        } else if (field=='message') {
+                            status.message = v;
+                        } else if (field=='validationWindow') {
+                            status.validationWindow = v;
+                        } else if (field=='messageSignature') {
+                            status.messageSignature = v;
+                        }
+                    })
+                    response.status = status;
+                }
+            });
+        } catch (error) {
+            console.error(error);
+            response = null;
+        }
+        return response;
+    }
+
+    getPayload() {
+        return this;
+    }
 
     /**
      * Constructor

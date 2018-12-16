@@ -101,7 +101,7 @@ class BlockChainServer {
                         } else {
                             let response = new Payload.SingleStarResponse(block);
                             console.log(response.toJSON());
-                            return h.response(response.toJSON()).code(200);
+                            return h.response(response.getPayload()).code(200);
                         }
                     } catch (error) {
                         return h.response(error).code(500);
@@ -128,7 +128,7 @@ class BlockChainServer {
                             return h.response("Requested star record not found: " + height).code(404);
                         } else {
                             let response = new Payload.SingleStarResponse(block);
-                            return h.response(response.toJSON()).code(200);
+                            return h.response(response.getPayload()).code(200);
                         }
                     } catch (error) {
                         return h.response(error).code(500);
@@ -161,7 +161,7 @@ class BlockChainServer {
                                 }
                             }
                         }
-                        return h.response(response.toJSON()).code(200);
+                        return h.response(response.getPayload()).code(200);
                     } catch (error) {
                         return h.response(error).code(500);
                     }
@@ -212,29 +212,31 @@ class BlockChainServer {
             path:'/message-signature/validate', //TODO: Change this to path: /authenticate"
             handler:function(request,h) {
                 return (async function add(req, handler) {
+                    console.log("###: ", req.payload);
                     let authenticationReq = Payload.AuthenticationRequest.fromJSON(req.payload);
+                    console.log("###: ", authenticationReq);
                     if (authenticationReq == null || authenticationReq.address == null || authenticationReq.address == '') {
                         return h.response("Null or invalid JSON provided for wallet address. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
                     } else {
                         try {
                             let address = authenticationReq.address;
-                            let signature = authenticationReq.signedMessage;
+                            let signature = authenticationReq.signature;
                             let timestamp = self.mempool.getPendingSession(address);
                             if (timestamp==null) {
                                 return h.response("Session has either expired, or was never created. Please initiate a validation request first.").code(404);
                             } else {
-                                let isAuthenticated = self.authenticator.verifyAnswer(address, timestamp, signature, address);
+                                let isAuthenticated = self.authenticator.verifyAnswer(address, timestamp, signature);
                                 if (isAuthenticated) {
                                     let newTimestamp = mempool.approveSession(address);
                                     let timeWindow = self.mempool.getValidatedSessionWindow();
                                     let authenticationResp = new Payload.AuthenticationResponse(isAuthenticated, address, newTimestamp, message, timeWindow)
-                                    return h.response(authenticationResp.toJSON()).code(202);
+                                    return h.response(authenticationResp).code(202);
                                 } else {
                                     return h.response("Signature was invalid").code(401);
                                 }
                             }
                         } catch (error) {
-                            return h.response(error).code(500);
+                            return h.response(error.toString()).code(500);
                         }
                     }
                 }) (request,h);

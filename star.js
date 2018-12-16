@@ -98,9 +98,9 @@ class Star {
         return star;
     }
 
-    toJSON() {
-        return JSON.stringify(this);
-    }
+    // toJSON() {
+    //     return JSON.stringify(this);
+    // }
 
     getId() {
         return "{}:{}:{}:{}".format(this.ra, this.dec, this.mag, this.cen)

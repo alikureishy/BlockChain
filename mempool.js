@@ -118,7 +118,7 @@ class Mempool {
      */
     getPendingSession(address) {
         if (this.pendingSessions.has(address)) {
-            let currentTime = new Date.getTime();
+            let currentTime = new Date().getTime();
             let timestamp = this.pendingSessions.get(address);
             if (timestamp < (currentTime - this.getPendingSessionWindow())) {
                 console.log("Mempool (getPendingSession): Pending session for {} has already expired. Clearing...".format(address))
@@ -140,7 +140,7 @@ class Mempool {
      */
     getValidatedSession(address) {
         if (this.validatedSessions.has(address)) {
-            let currentTime = new Date.getTime();
+            let currentTime = new Date().getTime();
             let timestamp = this.validatedSessions.get(address);
             if (timestamp < (currentTime - this.getValidatedSessionWindow())) {
                 // this.validatedSessions.delete(address);

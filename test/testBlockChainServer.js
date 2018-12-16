@@ -14,6 +14,14 @@ const StarRecord = require('../star.js').StarRecord;
 const Payload = require('../payload.js');
 const Authenticator = require('../security-layer.js').Authenticator;
 
+const Keys = [
+                    /*Private Key                           |           Public Key*/
+    ["L3qAJJMf8QhQgBgoMttc7HfrE87X8JhqiXgLR2makb2rxW6CW4JM", "1Jv5ds1W9DfSqWUHWLmm3hqT8x4z7Xa1PA"]
+    ["KyEyh9m2SU2wiKGWkTp1kbiqxgdWBwNSf1n7brExmqBNUwTMQrS4", "158NVGavYHEe68LuGCb1LmKVC8jCF76sd3"],
+    ["L1cKnrCHh1EsZFgzzyxMDmDYsjWeAbP3hAGd3ZvQKS5FrnACmmK2", "1JaTY18aUujbUgtwZoNzasgL1EzKQZfJBb"],
+    ["L5gjg5C4gY3GCuW5vF8279sMBSorYGj4ssLcFikxGNnQweMWzAor", "134tfh1BZYZWpCYyQ4FUg5z8MhBBUaGA8S"]
+]
+
 /**
  * Test to verify the GET (count) REST-API works
  * See: https://github.com/vlucas/frisby for expectation options
@@ -107,56 +115,47 @@ describe('testGetCount', function () {
         await server.start();
     });
 
-    // 1: Create session
-    let address = "1234567890";
+    let address = Keys[0][0];
+    let privateKey = Keys[0][1];
     let req = new Payload.SessionRequest(address);
-    let reqJSON = JSON.stringify(req);
-    await it('should create a session and return a timestamp/window', function () {
+    let receivedChallenge = null;
+    let timestamp = null;
+
+    // 1: Create session
+    it('should create a session and return a timestamp/window', function () {
         return frisby.post('http://localhost:8000/requestValidation', JSON.stringify(req))
                 .expect('status', 201)
-                .expect('json', 'address', "1234567890")
-                .expect('json', 'validationWindow', 300)
+                .expect('json', 'address', address)
+                .expect('json', 'validationWindow', 300000)
                 .expect('jsonTypes', 
                     { // Assert *each* object in 'items' array
                         'requestTimeStamp': joi.date().required(),
                         'message': joi.string().required()
                     }
-                ).done(() => {});
-                // .expect('payload', "1");
+                ).then(res => {
+                    console.log(res.json);
+                    receivedChallenge = res.json.message;
+                    timestamp = res.json.requestTimeStamp;
+                    let expectedChallenge = new Authenticator().generateChallenge(address, timestamp);
+                    assert (receivedChallenge, expectedChallenge, "Issued challenge message was not as expected");
+                }).done(() => {});
     });
 
-    let timestamp = null;
-    let signature = null;
-    let expectedChallenge = new Authenticator().generateChallenge(address, timestamp);
-    await it ("Should allow duplicate session requests, and issue the appropriate challenge for authentication", async function() {
-        let resp = await fetch("", {method: 'POST', body: reqJSON, headers: {'Content-Type': 'application/json'}});
-        assert (resp.status, 201, "Duplicate session request should still return the same session info");
-        resp = new Payload.SessionResponse(resp.json);
-        let respJSON = await resp.json();
-        timestamp = respJSON.requestTimeStamp;
-        let receivedChallenge = respJSON.message;
-        assert (receivedChallenge, expectedChallenge, "Issued challenge message was not as expected");
-        signature = null; //???????????
-        return done();
-    });
-
-    // 2: Authenticate
-    await it('should allow authentication and return confirmation info', function () {
-        let req = new Payload.AuthenticationRequest(address, signature);
-        let resp = new Payload.AuthenticationResponse(true, address, timestamp, expectedChallenge, 300);
-        return frisby.post('http://localhost:8000/message-signature/validate', JSON.stringify(req))
-                .expect('status', 202)
-                .expectJSON(resp.toJSON()
-                // .expect('json', 'registerStar', true)
-                // .expect('json', 'height', 1)
-                // .expect('jsonTypes', 
-                //     { // Assert *each* object in 'items' array
-                //         'time': joi.date().required(),
-                //         'hash': joi.string().required(),
-                //         'previousBlockHash': joi.string().required()
-                //     }
-                ).done(() => {});
-                // .expect('payload', "1");
+    // 2: Authentication request
+    it('should allow authentication and return confirmation info', function () {
+        let signature = new Authenticator().signChallenge(address, receivedChallenge);
+        console.log("### - SIGNATURE - ", signature);
+        req = new Payload.AuthenticationRequest(address, signature);
+        console.log("### - AuthReq - ", JSON.stringify(req));
+        return frisby.post("http://localhost:8000/message-signature/validate", JSON.stringify(req))
+            .expect('status', 202)
+            .expect('json', 'registerStar', true)
+            .expect('json', 'status.address', address)
+            .expect('json', 'status.requestTimeStamp', timestamp)
+            .expect('json', 'status.message', receivedChallenge)
+            .expect('json', 'status.validationWindow', 1800000)
+            .expect('json', 'status.messageSignature', true)
+            .done();
     });
 
     // 3: Register star
@@ -165,16 +164,16 @@ describe('testGetCount', function () {
     let decodedStory = "This is a dummy story";
     let dummyStarRecord = new StarRecord("ABCDEFGHIJKL", new Star(1, 2, 3, 4, decodedStory));
     let encodedStory = StarRecord.encodeStarRecord(dummyStarRecord).star.story;
-    await it('should return the block that was added', function () {
-        var blockToAdd = new Block(dummyStarRecord.toJSON());
-        return frisby.post('http://localhost:8000/block', JSON.stringify(blockToAdd))
+    it('should return the block that was added', function () {
+        var starToAdd = new Block(JSON.stringify(dummyStarRecord));
+        return frisby.post('http://localhost:8000/block', JSON.stringify(starToAdd))
                 .expect('status', 201)
                 .expect('json', 'height', 1)
                 .expect('json', 'body.address', address)
                 .expect('json', 'body.star.story', encodedStory)
                 .expect('json', 'body.star.decodedStory', decodedStory)
                 .expect('jsonTypes', 
-                    { // Assert *each* object in 'items' array
+                    {
                         'time': joi.date().required(),
                         'hash': joi.string().required(),
                         'previousBlockHash': joi.string().required()
@@ -183,7 +182,7 @@ describe('testGetCount', function () {
                 // .expect('payload', "1");
     });
 
-    await it('should return a count of 2 blocks', function () {
+    it('should return a count of 2 blocks', function () {
         return frisby.get('http://localhost:8000/block/count')
                 .expect('status', 200)
                 .expect('bodyContains', "2")
