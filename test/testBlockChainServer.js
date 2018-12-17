@@ -14,12 +14,12 @@ const StarRecord = require('../star.js').StarRecord;
 const Payload = require('../payload.js');
 const Authenticator = require('../security-layer.js').Authenticator;
 
-const Keys = [
-                    /*Private Key                           |           Public Key*/
-    ["L3qAJJMf8QhQgBgoMttc7HfrE87X8JhqiXgLR2makb2rxW6CW4JM", "1Jv5ds1W9DfSqWUHWLmm3hqT8x4z7Xa1PA"]
-    ["KyEyh9m2SU2wiKGWkTp1kbiqxgdWBwNSf1n7brExmqBNUwTMQrS4", "158NVGavYHEe68LuGCb1LmKVC8jCF76sd3"],
-    ["L1cKnrCHh1EsZFgzzyxMDmDYsjWeAbP3hAGd3ZvQKS5FrnACmmK2", "1JaTY18aUujbUgtwZoNzasgL1EzKQZfJBb"],
-    ["L5gjg5C4gY3GCuW5vF8279sMBSorYGj4ssLcFikxGNnQweMWzAor", "134tfh1BZYZWpCYyQ4FUg5z8MhBBUaGA8S"]
+var Keys = [
+                                /*Private Key                           |           Public Key*/
+    [Buffer.from("L3qAJJMf8QhQgBgoMttc7HfrE87X8JhqiXgLR2makb2rxW6CW4JM"), Buffer.from("1Jv5ds1W9DfSqWUHWLmm3hqT8x4z7Xa1PA")],
+    [Buffer.from("KyEyh9m2SU2wiKGWkTp1kbiqxgdWBwNSf1n7brExmqBNUwTMQrS4"), Buffer.from("158NVGavYHEe68LuGCb1LmKVC8jCF76sd3")],
+    [Buffer.from("L1cKnrCHh1EsZFgzzyxMDmDYsjWeAbP3hAGd3ZvQKS5FrnACmmK2"), Buffer.from("1JaTY18aUujbUgtwZoNzasgL1EzKQZfJBb")],
+    [Buffer.from("L5gjg5C4gY3GCuW5vF8279sMBSorYGj4ssLcFikxGNnQweMWzAor"), Buffer.from("134tfh1BZYZWpCYyQ4FUg5z8MhBBUaGA8S")]
 ]
 
 /**
@@ -44,7 +44,7 @@ describe('testGetCount', function () {
                 .done(() => {});
                 // .expect('payload', "1");
     });
-   
+
     after(async () => {
         await server.stop();
         rimraf.sync(folder);
@@ -52,11 +52,11 @@ describe('testGetCount', function () {
         console.info("...Stopped server.");
     });
   });
-  
+
   /**
    * Test to verify the GET (height) REST-API works
    */
-  describe('testGetBlock', function () {
+describe('testGetBlock', function () {
     var folder = "./.testdata/testGetBlock";
     var server = null;
     before(async () => {
@@ -73,7 +73,7 @@ describe('testGetCount', function () {
                 .expect('json', 'body', "Genesis Block")
                 .expect('json', 'height', 0)
                 .expect('json', 'previousBlockHash', "")
-                .expect('jsonTypes', 
+                .expect('jsonTypes',
                     { // Assert *each* object in 'items' array
                         'time': joi.date().required(),
                         'hash': joi.string().required()
@@ -81,7 +81,7 @@ describe('testGetCount', function () {
                 ).done(() => {});
                 // .expect('payload', "1");
     });
-   
+
     after(async () => {
         await server.stop();
         rimraf.sync(folder);
@@ -96,7 +96,7 @@ describe('testGetCount', function () {
 
   /**
    * Test to verify the POST (block) REST-API works
-   * 
+   *
    * Plan:
    *    Create session
    *    Authenticate
@@ -104,7 +104,7 @@ describe('testGetCount', function () {
    *    Check count
    *    Check get
    */
-  describe('testRegisterStar', async function () {
+describe('testRegisterStar', async function () {
     var folder = "./.testdata/testRegisterStar";
     var server = null;
     before(async () => {
@@ -115,11 +115,13 @@ describe('testGetCount', function () {
         await server.start();
     });
 
-    let address = Keys[0][0];
-    let privateKey = Keys[0][1];
-    let req = new Payload.SessionRequest(address);
-    let receivedChallenge = null;
-    let timestamp = null;
+    var auth = new Authenticator();
+    var keyPair = bitcoin.ECPair.fromWIF('5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss');
+    var privateKey = keyPair.privateKey;
+    var address = '1HZwkjkeaoZfTSaJxDw6aKkxp45agDiEzN';
+
+    var timestamp = null;
+    var expectedChallenge = null;
 
     // 1: Create session
     it('should create a session and return a timestamp/window', function () {
@@ -127,7 +129,7 @@ describe('testGetCount', function () {
                 .expect('status', 201)
                 .expect('json', 'address', address)
                 .expect('json', 'validationWindow', 300000)
-                .expect('jsonTypes', 
+                .expect('jsonTypes',
                     { // Assert *each* object in 'items' array
                         'requestTimeStamp': joi.date().required(),
                         'message': joi.string().required()
@@ -136,23 +138,21 @@ describe('testGetCount', function () {
                     console.log(res.json);
                     receivedChallenge = res.json.message;
                     timestamp = res.json.requestTimeStamp;
-                    let expectedChallenge = new Authenticator().generateChallenge(address, timestamp);
+                    expectedChallenge = '{0}:{1}:starRegistry'.format(address, timestamp);
                     assert (receivedChallenge, expectedChallenge, "Issued challenge message was not as expected");
                 }).done(() => {});
     });
 
     // 2: Authentication request
+    var signature = bitcoinMessage.sign(expectedChallenge, privateKey, keyPair.compressed);
     it('should allow authentication and return confirmation info', function () {
-        let signature = new Authenticator().signChallenge(address, receivedChallenge);
-        console.log("### - SIGNATURE - ", signature);
         req = new Payload.AuthenticationRequest(address, signature);
-        console.log("### - AuthReq - ", JSON.stringify(req));
         return frisby.post("http://localhost:8000/message-signature/validate", JSON.stringify(req))
             .expect('status', 202)
             .expect('json', 'registerStar', true)
             .expect('json', 'status.address', address)
             .expect('json', 'status.requestTimeStamp', timestamp)
-            .expect('json', 'status.message', receivedChallenge)
+            .expect('json', 'status.message', expectedChallenge)
             .expect('json', 'status.validationWindow', 1800000)
             .expect('json', 'status.messageSignature', true)
             .done();
@@ -172,7 +172,7 @@ describe('testGetCount', function () {
                 .expect('json', 'body.address', address)
                 .expect('json', 'body.star.story', encodedStory)
                 .expect('json', 'body.star.decodedStory', decodedStory)
-                .expect('jsonTypes', 
+                .expect('jsonTypes',
                     {
                         'time': joi.date().required(),
                         'hash': joi.string().required(),
@@ -195,7 +195,7 @@ describe('testGetCount', function () {
                 .expect('status', 200)
                 .expect('json', 'body', "Test Block")
                 .expect('json', 'height', 1)
-                .expect('jsonTypes', 
+                .expect('jsonTypes',
                     { // Assert *each* object in 'items' array
                         'time': joi.date().required(),
                         'hash': joi.string().required(),
@@ -204,7 +204,7 @@ describe('testGetCount', function () {
                 ).done(() => {});
                 // .expect('payload', "1");
     });
-   
+
     after(async () => {
         await server.stop();
         rimraf.sync(folder);
