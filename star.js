@@ -47,7 +47,7 @@ class StarRecord {
         let encoded = starRecord.star.story;
         let buf = new Buffer(encoded, 'hex');
         let decoded = buf.toString('ascii');
-        starRecord.storyDecoded = decoded;
+        starRecord.star.decodedStory = decoded;
         block.body = JSON.stringify(starRecord);
         return block;
     }
@@ -81,6 +81,9 @@ class Star {
         star.mag = obj.mag;
         star.cen = obj.cen;
         star.story = obj.story;
+        if (obj.decodedStory != null) {
+            star.decodedStory = obj.decodedStory;
+        }
 
         return star;
 

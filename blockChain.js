@@ -135,34 +135,6 @@ class BlockChain{
     let blockChain = new BlockChain(folder);
     return blockChain.whenPersistorReady.then(
       async function(persistor) {
-
-        // Ensure that the block-hash lookup table exists too
-        {
-          let blob = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP, /*throwOnAbsence=*/false);
-          if (blob == null) {
-            blockChain.hashLookup = new Map();
-            await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(blockChain.hashLookup), /*count=*/false);
-          } else {
-            blockChain.hashLookup = Utils.jsonToMap(blob);
-          }
-        }
-
-        {
-          // Ensure that the star lookup table exists too
-          // TODO:
-          //  #1: Fix coupling between blockchain.js and star.js
-          //       Move this to a higher layer wrapper that internally delegates to blockchain
-          //       And expose a way for multiple such meta-information to be added to the blockchain
-          //       class.
-          let blob = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP, /*throwOnAbsence=*/false);
-          if (blob == null) {
-            blockChain.starLookup = new Map();
-            await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(blockChain.starLookup), /*count=*/false);
-          } else {
-            blockChain.starLookup = Utils.jsonToMap(blob);
-          }
-        }
-
         return blockChain;
       },
       function(err) {
@@ -178,12 +150,37 @@ class BlockChain{
    */
   constructor(folder){
     let self = this;
-    self.dictionary = null;
     self.whenPersistorReady =
       new Promise(
         function(resolve, reject) {
           Persistor.createPersistorAnd(folder).then(
-            function(persistor) {
+            async function(persistor) {
+              { // Ensure that the block-hash lookup table exists too
+                let blob = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP, /*throwOnAbsence=*/false);
+                if (blob == null) {
+                  self.hashLookup = new Map();
+                  await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup), /*count=*/false);
+                } else {
+                  self.hashLookup = Utils.jsonToMap(blob);
+                }
+              }
+    
+              { // Ensure that the star lookup table exists too
+                // TODO:
+                //  #1: Fix coupling between blockchain.js and star.js
+                //       Move this to a higher layer wrapper that internally delegates to blockchain
+                //       And expose a way for multiple such meta-information to be added to the blockchain
+                //       class.
+                let blob = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP, /*throwOnAbsence=*/false);
+                if (blob == null) {
+                  self.starLookup = new Map();
+                  await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(self.starLookup), /*count=*/false);
+                } else {
+                  self.starLookup = Utils.jsonToMap(blob);
+                }
+              }
+
+              // Ensure that the genesis block exists
               if (persistor.getBlobCount()==0) {
                 // console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
@@ -326,7 +323,7 @@ class BlockChain{
           console.log("Invalid block hash being queried: ", blockHash);
           return null;
         } else {
-          let height = self.dictionary.get(blockHash);
+          let height = self.hashLookup.get(blockHash);
           return persistor.getBlobAnd(height).then(
             function(blob) {
               return Block.fromBlob(blob);

@@ -280,10 +280,13 @@ class BlockChainServer {
                                 // Create a new block with this star's data encoded into the 'body' field and add it to the blockchain
                                 let newBlock = new Block(JSON.stringify(starRecord));
                                 newBlock = await blockchain.addBlockAnd(newBlock);
-                                assert (newBlock != null, "Failed to add block");
-                                self.mempool.evict(address);     // Ensures that a user can only add one start for each session
-                                let response = new Payload.SingleStarResponse(newBlock);
-                                return h.response(response.getPayload()).code(201);
+                                if (newBlock==null) {
+                                    return h.response("Duplicate star data provided. Please ensure that this star hasn't already been registered: \n\"" + starRecord.star.getId() + "\"").code(409);
+                                } else {
+                                    self.mempool.evict(address);     // Ensures that a user can only add one start for each session
+                                    let response = new Payload.SingleStarResponse(newBlock);
+                                    return h.response(response.getPayload()).code(201);
+                                }
                             }
                         } catch (error) {
                             console.error(error);
