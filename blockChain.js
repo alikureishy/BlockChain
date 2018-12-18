@@ -185,9 +185,12 @@ class BlockChain{
                 // console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
                 persistor.addBlobAnd(0, genesisBlock).then(
-                  function(blockCount) {
+                  async function(blockCount) {
                     // console.info("Added 'Genesis Block': \n", genesisBlock);
                     // console.info("--> Total size of chain: \n", blockCount);
+                    // Update the hashlookup table
+                    self.hashLookup.set(genesisBlock.hash, genesisBlock.height);
+                    await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup));
                     resolve (persistor);
                   },
                   function(err) {
@@ -238,9 +241,6 @@ class BlockChain{
               console.log("Found duplicate star. Addition of this record not allowed.")
               return null;
             } else {
-              self.starLookup.set(starId, newBlock.height);
-              await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(self.starLookup));
-              
               // Persist the block:
               assert(await persistor.addBlobAnd(newBlock.height, newBlock) == newBlock.height, "Height of new block was not as expected");
 
@@ -248,6 +248,10 @@ class BlockChain{
               self.hashLookup.set(newBlock.hash, newBlock.height);
               await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup));
 
+              // Update the starlookup table
+              self.starLookup.set(starId, newBlock.height);
+              await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(self.starLookup));
+              
               return newBlock;
             }
           },

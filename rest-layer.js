@@ -151,12 +151,13 @@ class BlockChainServer {
                     let blockchain = await self.blockChainPromise;
                     try {
                         response = new Payload.MultiStarResponse();
-                        for (i = 1; true; i++) {    // Making sure to skip over the genesis block
+                        for (let i = 1; true; i++) {    // Making sure to skip over the genesis block
                             let block = await blockchain.getBlockAnd(i);
                             if (block==null) {
                                 break; // We've exhausted all the blocks (assuming increasing sequence)
                             } else {
-                                if (starBlock.getStarData().address == address) {
+                                let starRecord = StarRecord.fromJSON(block.body);
+                                if (starRecord.address == address) {
                                     response.addStar(block);
                                 }
                             }
@@ -169,6 +170,43 @@ class BlockChainServer {
             }
         });
 
+        /**
+         * ========================================================
+         * Retrieves all blocks based on the height
+         * ========================================================
+         */
+        this.server.route({
+            method:'GET',
+            path:'/raw',
+            handler:function(request,h) {
+                return (async function get(req, handler) {
+                    let blockchain = await self.blockChainPromise;
+                    try {
+                        let persistor = await blockchain.whenPersistorReady;
+                        let list = [];
+                        let starLookup = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP);
+                        list.push(starLookup);
+                        let hashLookup = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP);
+                        list.push(hashLookup);
+
+                        // response = new Payload.MultiStarResponse();
+                        for (let i = 0; true; i++) {    // Making sure to skip over the genesis block
+                            let block = await blockchain.getBlockAnd(i);
+                            if (block==null) {
+                                break; // We've exhausted all the blocks (assuming increasing sequence)
+                            } else {
+                                list.push(block);
+                            }
+                        }
+
+                        return h.response(list).code(200);
+                    } catch (error) {
+                        console.error(error);
+                        return h.response(error.toString).code(500);
+                    }
+                }) (request,h);
+            }
+        });
 
         /**
          * ========================================================
