@@ -20,19 +20,13 @@ class StarRecord {
      * @param {string} json
      */
     static fromJSON(json) {
-        var starRecord = new StarRecord();
-        try {
-            JSON.parse(json, function(field, value) {
-                if (field=='address') {
-                    starRecord.address = value;
-                } else if (field=='star') {
-                    starRecord.star = Star.fromJSON(value);
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            starRecord = null;
+        let obj = json;
+        if (typeof(json) == "string") {
+            obj = JSON.parse(json);
         }
+        var starRecord = new StarRecord();
+        starRecord.address = obj.address;
+        starRecord.star = Star.fromJSON(obj.star);
         return starRecord;
     }
 
@@ -50,11 +44,11 @@ class StarRecord {
 
     static decodeStarBlock(block) {
         let starRecord = StarRecord.fromJSON(block.body);
-        let encoded = starRecord.story;
+        let encoded = starRecord.star.story;
         let buf = new Buffer(encoded, 'hex');
         let decoded = buf.toString('ascii');
         starRecord.storyDecoded = decoded;
-        block.body = starRecord.toJSON();
+        block.body = JSON.stringify(starRecord);
         return block;
     }
 
@@ -73,29 +67,43 @@ class Star {
      *      "ra": "16h 29m 1.0s",
      *      "story": "Found star using https://www.google.com/sky/"
      * }
-     * @param {string} json
+     * @param {string} obj
      */
     static fromJSON(json) {
-        var star = new Star();
-        try {
-            JSON.parse(blob, function(field, value) {
-                if (field=='ra') {
-                    star.de = value;
-                } else if (field=='dec') {
-                    star.star = value;
-                } else if (field=='mag') {
-                    star.star = value;
-                } else if (field=='cen') {
-                    star.star = value;
-                } else if (field=='story') {
-                    star.star = value;
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            star = null;
+        let obj = json;
+        if (typeof(obj) == "string") {
+            obj = JSON.parse(obj);
         }
+        var star = new Star();
+
+        star.ra = obj.ra;
+        star.dec = obj.dec;
+        star.mag = obj.mag;
+        star.cen = obj.cen;
+        star.story = obj.story;
+
         return star;
+
+        // var star = new Star();
+        // try {
+        //     JSON.parse(blob, function(field, value) {
+        //         if (field=='ra') {
+        //             star.ra = value;
+        //         } else if (field=='dec') {
+        //             star.dec = value;
+        //         } else if (field=='mag') {
+        //             star.mag = value;
+        //         } else if (field=='cen') {
+        //             star.cen = value;
+        //         } else if (field=='story') {
+        //             star.story = value;
+        //         }
+        //     });
+        // } catch (error) {
+        //     console.error(error);
+        //     star = null;
+        // }
+        // return star;
     }
 
     // toJSON() {

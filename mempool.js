@@ -150,7 +150,7 @@ class Mempool {
                 return timestamp;
             }
         } else {
-            console.log("Mempool (getValidatedSession): No existing pending session exists for {}".format(address))
+            console.log("Mempool (getValidatedSession): No existing validated session exists for {}".format(address))
             return null;
         }
     }

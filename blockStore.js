@@ -145,7 +145,7 @@ class Persistor {
                 if (count) {
                     self.blobCount = self.blobCount + 1;
                 }
-                resolve(self.blobCount);
+                resolve(self.blobCount-1);
             });
         });
     }

@@ -245,7 +245,7 @@ class BlockChain{
               await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(self.starLookup));
               
               // Persist the block:
-              newBlock = await persistor.addBlobAnd(newBlock.height, newBlock);
+              assert(await persistor.addBlobAnd(newBlock.height, newBlock) == newBlock.height, "Height of new block was not as expected");
 
               // Update the hashlookup table
               self.hashLookup.set(newBlock.hash, newBlock.height);

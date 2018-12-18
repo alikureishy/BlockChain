@@ -232,13 +232,13 @@ class AuthenticationResponse {
      * }
      */
     static fromJSON(json) {
-        var response = new SessionResponse();
+        var response = new AuthenticationResponse();
         try {
             JSON.parse(json, function(field, value) {
                 if (field=='registerStar') {
                     response.address = value;
                 } else if (field=='status') {
-                    var status = new Object;
+                    var status = {};
                     JSON.parse(value, function(f, v) {
                         if (field=='addrees') {
                             status.address = v;
