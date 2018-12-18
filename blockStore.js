@@ -112,6 +112,9 @@ class Persistor {
         let self = this;
         return new Promise(
             function(resolve, reject) {
+                if (key == undefined || key == '' || key == null) {
+                    reject("Key was invalid: ", key);
+                }
                 self.db.get(key, function(err, value) {
                     if(err) {
                         if (throwOnAbsence) {

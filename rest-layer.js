@@ -18,6 +18,7 @@ const Mempool = require('./mempool.js').Mempool;
 const Authenticator = require('./security-layer.js').Authenticator;
 const Star = require('./star.js').Star;
 const StarRecord = require('./star.js').StarRecord;
+const Utils = require('./utils.js');
 
 class BlockChainServer {
 
@@ -68,7 +69,7 @@ class BlockChainServer {
                         // console.log("...GET:/stars/count");
                         return count;
                     } catch (error) {
-                        return h.response(error).code(500);
+                        return h.response(error.toString()).code(500);
                     }
                 }) (request,h);
             }
@@ -104,7 +105,7 @@ class BlockChainServer {
                             return h.response(response.getPayload()).code(200);
                         }
                     } catch (error) {
-                        return h.response(error).code(500);
+                        return h.response(error.toString()).code(500);
                     }
                 }) (request,h);
             }
@@ -125,13 +126,13 @@ class BlockChainServer {
                     try {
                         let block = await blockchain.getBlockByHashAnd(hash);
                         if (block==null) {
-                            return h.response("Requested star record not found: " + height).code(404);
+                            return h.response("Requested star record not found: " + hash).code(404);
                         } else {
                             let response = new Payload.SingleStarResponse(block);
                             return h.response(response.getPayload()).code(200);
                         }
                     } catch (error) {
-                        return h.response(error).code(500);
+                        return h.response(error.toString()).code(500);
                     }
                 }) (request,h);
             }
@@ -164,7 +165,7 @@ class BlockChainServer {
                         }
                         return h.response(response.getPayload()).code(200);
                     } catch (error) {
-                        return h.response(error).code(500);
+                        return h.response(error.toString()).code(500);
                     }
                 }) (request,h);
             }
@@ -182,12 +183,12 @@ class BlockChainServer {
                 return (async function get(req, handler) {
                     let blockchain = await self.blockChainPromise;
                     try {
-                        let persistor = await blockchain.whenPersistorReady;
+                        // let persistor = await blockchain.whenPersistorReady;
                         let list = [];
-                        let starLookup = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP);
-                        list.push(starLookup);
-                        let hashLookup = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP);
-                        list.push(hashLookup);
+                        // let starLookup = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP);
+                        list.push(Utils.mapToJSON(blockchain.starLookup));
+                        // let hashLookup = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP);
+                        list.push(Utils.mapToJSON(blockchain.hashLookup));
 
                         // response = new Payload.MultiStarResponse();
                         for (let i = 0; true; i++) {    // Making sure to skip over the genesis block
@@ -202,7 +203,7 @@ class BlockChainServer {
                         return h.response(list).code(200);
                     } catch (error) {
                         console.error(error);
-                        return h.response(error.toString).code(500);
+                        return h.response(error.toString()).code(500);
                     }
                 }) (request,h);
             }
@@ -232,7 +233,7 @@ class BlockChainServer {
                             return h.response(sessionResp).code(201);
                         } catch (error) {
                             console.error(error);
-                            return h.response(error).code(500);
+                            return h.response(error.toString()).code(500);
                         }
                     }
                 }) (request,h);
@@ -328,7 +329,7 @@ class BlockChainServer {
                             }
                         } catch (error) {
                             console.error(error);
-                            return h.response(error).code(500);
+                            return h.response(error.toString()).code(500);
                         }
                     }
                 }) (request,h);

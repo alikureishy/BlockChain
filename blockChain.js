@@ -159,7 +159,7 @@ class BlockChain{
                 let blob = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP, /*throwOnAbsence=*/false);
                 if (blob == null) {
                   self.hashLookup = new Map();
-                  await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup), /*count=*/false);
+                  await persistor.addBlobAnd(BlockChain.HASH_LOOKUP, Utils.mapToJSON(self.hashLookup), /*count=*/false);
                 } else {
                   self.hashLookup = Utils.jsonToMap(blob);
                 }
@@ -174,7 +174,7 @@ class BlockChain{
                 let blob = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP, /*throwOnAbsence=*/false);
                 if (blob == null) {
                   self.starLookup = new Map();
-                  await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(self.starLookup), /*count=*/false);
+                  await persistor.addBlobAnd(BlockChain.STAR_LOOKUP, Utils.mapToJSON(self.starLookup), /*count=*/false);
                 } else {
                   self.starLookup = Utils.jsonToMap(blob);
                 }
@@ -184,12 +184,12 @@ class BlockChain{
               if (persistor.getBlobCount()==0) {
                 console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
-                await persistor.addBlobAnd(0, genesisBlock)
+                await persistor.addBlobAnd(0, genesisBlock);
                 // console.info("Added 'Genesis Block': \n", genesisBlock);
                 // console.info("--> Total size of chain: \n", blockCount);
                 // Update the hashlookup table
                 self.hashLookup.set(genesisBlock.hash, genesisBlock.height);
-                await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup));
+                await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, Utils.mapToJSON(self.hashLookup));
               } else {
                 console.info("Database already exists. Skipping genesis block creation.");
               }
@@ -323,14 +323,18 @@ class BlockChain{
           return null;
         } else {
           let height = self.hashLookup.get(blockHash);
-          return persistor.getBlobAnd(height).then(
-            function(blob) {
-              return Block.fromBlob(blob);
-            },
-            function(err) {
-              console.log(err);
-            }
-          );
+          if (height == undefined || height == null || height == '') {
+            return null;
+          } else {
+            return persistor.getBlobAnd(height).then(
+              function(blob) {
+                return Block.fromBlob(blob);
+              },
+              function(err) {
+                console.log(err);
+              }
+            );
+          }
         }
       }
     );
