@@ -81,7 +81,7 @@ class MultiStarResponse {
      */
     addStar(block) {
         block = StarRecord.decodeStarBlock(block);
-        this.stars.add(block);
+        this.stars.push(block);
     }
 }
 

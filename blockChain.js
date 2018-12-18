@@ -241,11 +241,11 @@ class BlockChain{
 
               // Update the hashlookup table
               self.hashLookup.set(newBlock.hash, newBlock.height);
-              await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup));
+              await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, Utils.mapToJSON(self.hashLookup));
 
               // Update the starlookup table
               self.starLookup.set(starId, newBlock.height);
-              await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, JSON.stringify(self.starLookup));
+              await persistor.updateBlobAnd(BlockChain.STAR_LOOKUP, Utils.mapToJSON(self.starLookup));
               
               return newBlock;
             }
