@@ -182,24 +182,19 @@ class BlockChain{
 
               // Ensure that the genesis block exists
               if (persistor.getBlobCount()==0) {
-                // console.info("Initializing empty database...");
+                console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
-                persistor.addBlobAnd(0, genesisBlock).then(
-                  async function(blockCount) {
-                    // console.info("Added 'Genesis Block': \n", genesisBlock);
-                    // console.info("--> Total size of chain: \n", blockCount);
-                    // Update the hashlookup table
-                    self.hashLookup.set(genesisBlock.hash, genesisBlock.height);
-                    await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup));
-                    resolve (persistor);
-                  },
-                  function(err) {
-                    console.log(err);
-                  });
+                await persistor.addBlobAnd(0, genesisBlock)
+                // console.info("Added 'Genesis Block': \n", genesisBlock);
+                // console.info("--> Total size of chain: \n", blockCount);
+                // Update the hashlookup table
+                self.hashLookup.set(genesisBlock.hash, genesisBlock.height);
+                await persistor.updateBlobAnd(BlockChain.HASH_LOOKUP, JSON.stringify(self.hashLookup));
               } else {
-                // console.info("Database already exists. Skipping genesis block creation.");
-                resolve (persistor);
+                console.info("Database already exists. Skipping genesis block creation.");
               }
+
+              resolve (persistor);
             },
             function(err) {
               console.log(err);
