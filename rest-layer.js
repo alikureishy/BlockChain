@@ -151,7 +151,7 @@ class BlockChainServer {
                     let address = req.params.address;
                     let blockchain = await self.blockChainPromise;
                     try {
-                        response = new Payload.MultiStarResponse();
+                        let response = new Payload.MultiStarResponse();
                         for (let i = 1; true; i++) {    // Making sure to skip over the genesis block
                             let block = await blockchain.getBlockAnd(i);
                             if (block==null) {
@@ -183,12 +183,12 @@ class BlockChainServer {
                 return (async function get(req, handler) {
                     let blockchain = await self.blockChainPromise;
                     try {
-                        // let persistor = await blockchain.whenPersistorReady;
+                        let persistor = await blockchain.whenPersistorReady;
                         let list = [];
-                        // let starLookup = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP);
-                        list.push(Utils.mapToJSON(blockchain.starLookup));
-                        // let hashLookup = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP);
-                        list.push(Utils.mapToJSON(blockchain.hashLookup));
+                        let starLookup = await persistor.getBlobAnd(BlockChain.STAR_LOOKUP);
+                        list.push(starLookup);
+                        let hashLookup = await persistor.getBlobAnd(BlockChain.HASH_LOOKUP);
+                        list.push(hashLookup);
 
                         // response = new Payload.MultiStarResponse();
                         for (let i = 0; true; i++) {    // Making sure to skip over the genesis block

@@ -23,6 +23,7 @@
     "hapi": "^17.7.0",
     "joi": "^14.1.0",
     "level": "^4.0.0",
+    "levelweb": "^1.2.1",
     "mocha": "^5.2.0",
     "mocha-steps": "^1.1.0",
     "mochawesome": "^3.1.1",

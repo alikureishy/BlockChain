@@ -323,7 +323,7 @@ class BlockChain{
           return null;
         } else {
           let height = self.hashLookup.get(blockHash);
-          if (height == undefined || height == null || height == '') {
+          if (height == null) {
             return null;
           } else {
             return persistor.getBlobAnd(height).then(
