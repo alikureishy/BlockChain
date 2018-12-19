@@ -53,13 +53,13 @@ class BlockChainServer {
         this.server.route({
             method:'GET',
             path:'/block/count',
-            handler:function(request,h) {
-                return h.redirect("/stars/count");
-            }
-        });
-        this.server.route({
-            method:'GET',
-            path:'/stars/count',
+        //     handler:function(request,h) {
+        //         return h.redirect("/stars/count");
+        //     }
+        // });
+        // this.server.route({
+        //     method:'GET',
+        //     path:'/stars/count',
             handler:function(request,h) {
                 return (async function get(req, handler) {
                     // console.log("GET:/stars/count...");
@@ -83,14 +83,14 @@ class BlockChainServer {
         this.server.route({
             method:'GET',
             path:'/block/{height}',
-            handler:function(request,h) {
-                let path = "/stars/{}".format(request.params.height);
-                return h.redirect(path);
-            }
-        });
-        this.server.route({
-            method:'GET',
-            path:'/stars/{height}',
+        //     handler:function(request,h) {
+        //         let path = "/stars/{}".format(request.params.height);
+        //         return h.redirect(path);
+        //     }
+        // });
+        // this.server.route({
+        //     method:'GET',
+        //     path:'/stars/{height}',
             handler:function(request,h) {
                 return (async function get(req, handler) {
                     let height = req.params.height;

@@ -133,10 +133,10 @@ describe('testRegisterStar', async function () {
     // 1: Create session
     it('should create a session and return a timestamp/window', function () {
         this.timeout(0);
+        keyPair = bitcoin.ECPair.makeRandom()
+        address = keyPair.getAddress()
+        privateKey = keyPair.d.toBuffer(32);
         auth = new Authenticator();
-        keyPair = bitcoin.ECPair.fromWIF('5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss'); // bitcoin.ECPair.makeRandom();
-        privateKey = keyPair.privateKey;
-        address = '1HZwkjkeaoZfTSaJxDw6aKkxp45agDiEzN'; // keyPair.address;
         assert(address!=null);
         assert(keyPair != null);
         assert(privateKey != null);
@@ -165,7 +165,7 @@ describe('testRegisterStar', async function () {
     it('should allow authentication and return confirmation info', function () {
         this.timeout(0);
         assert(expectedChallenge!=null);
-        var signature = bitcoinMessage.sign(expectedChallenge, privateKey, keyPair.compressed);
+        var signature = bitcoinMessage.sign(expectedChallenge, privateKey, keyPair.compressed).toString("base64");
         assert(signature!=null);
         req = new Payload.AuthenticationRequest(address, signature);
         return frisby.post("http://localhost:8000/message-signature/validate", JSON.stringify(req))
