@@ -30,14 +30,8 @@ class Authenticator {
     }
 
     signChallenge (challenge, keyPair) {
-        // var privateKey = bitcore.PrivateKey.fromWIF('cPBn5A4ikZvBTQ8D7NnvHZYCAxzDZ5Z2TSGW2LkyPiLxqYaJPBW4');
-        // var signature = Message('hello, world').sign(privateKey);
-        // return signature;
-        // console.log("Private key: ", privateKey);
-        // var keyPair = bitcoin.ECPair.fromWIF(privateKey);
-        let privKey = keyPair.privateKey;
+        let privKey = keyPair.d.toBuffer(32);
         var signature = bitcoinMessage.sign(challenge, privKey, keyPair.compressed);
-        console.log(signature.toString('base64'));
         return signature.toString('base64');
 
         // ******************************* PICK THIS ONE FOR NOW?
@@ -57,11 +51,9 @@ class Authenticator {
     //  * @param {string} walletKey
      */
     verifyAnswer(address, time, signature) {
-        return true;
-        
-        // let challenge = this.generateChallenge(address, time);
-        // let isValid = bitcoinMessage.verify(challenge, address, signature);
-        // return isValid;
+        let challenge = this.generateChallenge(address, time);
+        let isValid = bitcoinMessage.verify(challenge, address, signature);
+        return isValid;
 
         // See: https://github.com/bitcoinjs/bitcoinjs-lib/tree/master/test
         //keyPair.verify(hash, signature)
