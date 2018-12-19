@@ -100,8 +100,8 @@ class BlockChainServer {
                         if (block==null) {
                             return h.response("Requested block not found: " + height).code(404);
                         } else {
+                            block = StarRecord.starrifyBlock(block);
                             let response = new Payload.SingleStarResponse(block);
-                            console.log(response.toJSON());
                             return h.response(response.getPayload()).code(200);
                         }
                     } catch (error) {
@@ -128,6 +128,7 @@ class BlockChainServer {
                         if (block==null) {
                             return h.response("Requested star record not found: " + hash).code(404);
                         } else {
+                            block = StarRecord.starrifyBlock(block);
                             let response = new Payload.SingleStarResponse(block);
                             return h.response(response.getPayload()).code(200);
                         }
@@ -157,7 +158,8 @@ class BlockChainServer {
                             if (block==null) {
                                 break; // We've exhausted all the blocks (assuming increasing sequence)
                             } else {
-                                let starRecord = StarRecord.fromJSON(block.body);
+                                block = StarRecord.starrifyBlock(block);
+                                let starRecord = block.body;
                                 if (starRecord.address == address) {
                                     response.addStar(block);
                                 }
@@ -196,6 +198,7 @@ class BlockChainServer {
                             if (block==null) {
                                 break; // We've exhausted all the blocks (assuming increasing sequence)
                             } else {
+                                block = StarRecord.starrifyBlock(block);
                                 list.push(block);
                             }
                         }
@@ -226,7 +229,7 @@ class BlockChainServer {
                         try {
                             let address = sessionReq.address;
                             let timestamp = self.mempool.generatePendingSession(address);
-                            let timeWindow = self.mempool.getPendingSessionWindow();
+                            let timeWindow = self.mempool.getPendingSessionWindow(address);
                             assert (timestamp != null, "Shoudl not be receiving a null timestamp from mempool.generateSession()")
                             let challenge = self.authenticator.generateChallenge(address, timestamp);
                             let sessionResp = new Payload.SessionResponse(address, timestamp, challenge, timeWindow);
@@ -260,15 +263,15 @@ class BlockChainServer {
                         try {
                             let address = authenticationReq.address;
                             let signature = authenticationReq.signature;
-                            let timestamp = self.mempool.getPendingSession(address);
-                            let message = self.authenticator.generateChallenge(address, timestamp);
+                            let timestamp = self.mempool.getPendingSession(address); // || self.mempool.getValidatedSession(address);
                             if (timestamp==null) {
                                 return h.response("Session has either expired, or was never created. Please initiate a validation request first.").code(404);
                             } else {
+                                let message = self.authenticator.generateChallenge(address, timestamp);
                                 let isAuthenticated = self.authenticator.verifyAnswer(address, timestamp, signature);
                                 if (isAuthenticated) {
                                     let newTimestamp = self.mempool.approveSession(address);
-                                    let timeWindow = self.mempool.getValidatedSessionWindow();
+                                    let timeWindow = self.mempool.getValidatedSessionWindow(address);
                                     let authenticationResp = new Payload.AuthenticationResponse(isAuthenticated, address, newTimestamp, message, timeWindow)
                                     return h.response(authenticationResp).code(202);
                                 } else {
@@ -301,7 +304,6 @@ class BlockChainServer {
             path:'/block',
             handler:function(request,h) {
                 return (async function add(req, handler) {
-                    console.log("****:", req.params)
                     let registerStarReq = Payload.RegisterStarRequest.fromJSON(req.payload);
                     if (registerStarReq == null || registerStarReq.starRecord == null) {
                         return h.response("Null or invalid block data provided. Please provide a valid JSON string. Data provided: \n\"" + req.payload + "\"").code(400);
@@ -311,17 +313,21 @@ class BlockChainServer {
 
                             // Verify that there is a session active for this wallet:
                             let starRecord = registerStarReq.starRecord;
+                            if (!starRecord.hasRequiredFields()) {
+                                return h.response("Star record being registered MUST have the 'dec', 'ra' and 'story' fields specified.").code(406);
+                            }
                             let address = starRecord.address;
                             let timestamp = self.mempool.getValidatedSession(address);
                             if (timestamp==null) {
                                 return h.response("Session has expired or was never created. Please initiate a session before attempting validation.").code(404);
                             } else {
                                 // Create a new block with this star's data encoded into the 'body' field and add it to the blockchain
-                                let newBlock = new Block(JSON.stringify(starRecord));
+                                let newBlock = new Block(starRecord);
                                 newBlock = await blockchain.addBlockAnd(newBlock);
                                 if (newBlock==null) {
                                     return h.response("Duplicate star data provided. Please ensure that this star hasn't already been registered: \n\"" + starRecord.star.getId() + "\"").code(409);
                                 } else {
+                                    newBlock = StarRecord.starrifyBlock(newBlock);
                                     self.mempool.evict(address);     // Ensures that a user can only add one start for each session
                                     let response = new Payload.SingleStarResponse(newBlock);
                                     return h.response(response.getPayload()).code(201);

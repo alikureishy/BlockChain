@@ -38,25 +38,16 @@ class Block{
    * @param {string} blob
    */
   static fromBlob(blob) {
-    var block = new Block("");
-    try {
-      JSON.parse(blob, function(field, value) {
-        if (field=='body') {
-          block.body = value;
-        } else if (field=='time') {
-          block.time = value;
-        } else if (field=='height') {
-          block.height = value;
-        } else if (field=='previousBlockHash') {
-          block.previousBlockHash = value;
-        } else if (field=='hash') {
-          block.hash = value;
-        }
-      });
-    } catch (error) {
-      console.error(error);
-      block = null;
+    let obj = blob;
+    if (typeof(obj) == "string") {
+        obj = JSON.parse(obj);
     }
+    var block = new Block("");
+    block.body = obj.body;
+    block.time = obj.time;
+    block.height = obj.height;
+    block.previousBlockHash = obj.previousBlockHash;
+    block.hash = obj.hash;
     return block;
   }
 
@@ -75,9 +66,9 @@ class Block{
   /**
    * Returns the JSON string representation of this block
    */
-  toString() {
-    return JSON.stringify(this);
-  }
+  // toString() {
+  //   return JSON.stringify(this);
+  // }
 
   /**
    * Returns whether the given block is a genesis block (to encapsulate the
@@ -184,7 +175,7 @@ class BlockChain{
               if (persistor.getBlobCount()==0) {
                 console.info("Initializing empty database...");
                 let genesisBlock = Block.createGenesisBlock("Genesis Block");
-                await persistor.addBlobAnd(0, genesisBlock);
+                await persistor.addBlobAnd(0, JSON.stringify(genesisBlock));
                 // console.info("Added 'Genesis Block': \n", genesisBlock);
                 // console.info("--> Total size of chain: \n", blockCount);
                 // Update the hashlookup table
@@ -237,7 +228,7 @@ class BlockChain{
               return null;
             } else {
               // Persist the block:
-              assert(await persistor.addBlobAnd(newBlock.height, newBlock) == newBlock.height, "Height of new block was not as expected");
+              assert(await persistor.addBlobAnd(newBlock.height, JSON.stringify(newBlock)) == newBlock.height, "Height of new block was not as expected");
 
               // Update the hashlookup table
               self.hashLookup.set(newBlock.hash, newBlock.height);

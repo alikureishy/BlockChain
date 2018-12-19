@@ -61,15 +61,41 @@ class Mempool {
     /**
      * Returns the expiry period for pending sessions
      */
-    getPendingSessionWindow() {
-        return 300/*seconds*/ * 1000/*millis*/;
+    getPendingSessionWindow(address=null) {
+        let window = null;
+        if (address==null) {
+            window = 300/*seconds*/ * 1000/*millis*/;
+        } else {
+            let currentTime = new Date().getTime();
+            let timestamp = this.pendingSessions.get(address);
+            if (timestamp==null) {
+                window = null;
+            } else {
+                window = this.getPendingSessionWindow() - (currentTime - timestamp);
+                window = window > 0 ? window : null;
+            }
+        }
+        return window;
     }
 
     /**
      * Returns the expiry period for validated sessions
      */
-    getValidatedSessionWindow() {
-        return 1800/*seconds*/ * 1000/*millis*/;
+    getValidatedSessionWindow(address=null) {
+        let window = null;
+        if (address==null) {
+            window = 1800/*seconds*/ * 1000/*millis*/;
+        } else {
+            let currentTime = new Date().getTime();
+            let timestamp = this.validatedSessions.get(address);
+            if (timestamp==null) {
+                window = null;
+            } else {
+                window = this.getValidatedSessionWindow() - (currentTime - timestamp);
+                window = window > 0 ? window : null;
+            }
+        }
+        return window;
     }
 
     /**

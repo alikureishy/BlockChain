@@ -144,19 +144,18 @@ describe('testRegisterStar', async function () {
         var req = new Payload.SessionRequest(address);
         return frisby.post('http://localhost:8000/requestValidation', JSON.stringify(req))
                 .expect('status', 201)
+                .inspectJSON()
                 .expect('json', 'address', address)
-                .expect('json', 'validationWindow', 300000)
                 .expect('jsonTypes',
-                    { // Assert *each* object in 'items' array
-                        'requestTimeStamp': joi.date().required(),
+                    {
+                        'validationWindow': joi.number().less(300001).required(),
+                        'requestTimeStamp': joi.date().max('now').required(),
                         'message': joi.string().required()
                     }
                 ).then(res => {
-                    // console.log("###", res.json);
                     receivedChallenge = res.json.message;
                     timestamp = res.json.requestTimeStamp;
                     expectedChallenge = '{0}:{1}:starRegistry'.format(address, timestamp);
-                    // console.log("#### Expected Challenge: ", expectedChallenge);
                     assert (receivedChallenge, expectedChallenge, "Issued challenge message was not as expected");
                 }).done(() => {});
     });
@@ -169,26 +168,20 @@ describe('testRegisterStar', async function () {
         assert(signature!=null);
         req = new Payload.AuthenticationRequest(address, signature);
         return frisby.post("http://localhost:8000/message-signature/validate", JSON.stringify(req))
-            // .then(res => {
-            //     console.log("#####: ", res);
-            //     console.log("#####--------");
-            //     return res;
-            // })
             .expect('status', 202)
+            .inspectJSON()
             .expect('json', 'registerStar', true)
             .expect('json', 'status.address', address)
             .expect('json', 'status.message', expectedChallenge)
-            .expect('json', 'status.validationWindow', 1800000)
             .expect('json', 'status.messageSignature', true)
-            // .expect('jsonTypes', { // Assert *each* object in 'items' array
-            //     'status.requestTimeStamp': joi.date().required(),
-            // })
+            // .expect('jsonTypes', 
+            //     {
+            //         'status.validationWindow': joi.number().less(1800001).required(),
+            //         'status.requestTimeStamp': joi.date().max('now').required()
+            //     })
             .done(() => {});
     });
 
-    // 3: Register star
-    // let encodedStory = ...;
-    // let newStarBody = ...;
     it('should return the block that was added', async function () {
         this.timeout(500000);
         let currentCount = null;
@@ -204,7 +197,7 @@ describe('testRegisterStar', async function () {
                 .expect('status', 201)
                 .expect('json', 'height', currentCount)
                 .then(res => {
-                    let starRecord = StarRecord.fromJSON(res.json.body);
+                    let starRecord = res.json.body;
                     expect(starRecord.address).to.be.equal(address);
                     expect(starRecord.star.story).to.be.equal(encodedStory);
                     expect(starRecord.star.decodedStory).to.be.equal(decodedStory);
@@ -212,12 +205,11 @@ describe('testRegisterStar', async function () {
                 })
                 .expect('jsonTypes',
                     {
-                        'time': joi.date().required(),
+                        'time': joi.date().max('now').required(),
                         'hash': joi.string().required(),
                         'previousBlockHash': joi.string().required()
                     }
                 ).done(() => {});
-                // .expect('payload', "1");
     });
 
     it('should return a count of 2 blocks', function () {
@@ -226,7 +218,6 @@ describe('testRegisterStar', async function () {
                 .expect('status', 200)
                 .expect('bodyContains', "2")
                 .done(()=>{});
-                // .expect('payload', "1");
     });
 
     it('should be able to retrieve the added block again', function () {
@@ -243,12 +234,11 @@ describe('testRegisterStar', async function () {
             })
             .expect('jsonTypes',
                 {
-                    'time': joi.date().required(),
+                    'time': joi.date().max('now').required(),
                     'hash': joi.string().required(),
                     'previousBlockHash': joi.string().required()
                 }
             ).done(() => {});
-        // .expect('payload', "1");
     });
 
     after(async () => {

@@ -28,9 +28,6 @@ class SingleStarResponse {
      *       "previousBlockHash": "49cce61ec3e6ae664514d5fa5722d86069cf981318fc303750ce66032d0acff3"
      *   }
      */
-    toJSON() {
-        return JSON.stringify(this.starBlock);
-    }
 
     getPayload() {
         return this.starBlock;
@@ -60,9 +57,6 @@ class MultiStarResponse {
      *  ]
      * }
      */
-    toJSON() {
-        return JSON.stringify(this.stars);
-    }
 
     getPayload() {
         return this.stars;
@@ -96,17 +90,13 @@ class SessionRequest {
      * @param {string} json
      */
     static fromJSON(json) {
-        var request = new SessionRequest();
-        try {
-            JSON.parse(json, function(field, value) {
-                if (field=='address') {
-                    request.address = value;
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            request = null;
+        let obj = json;
+        if (typeof(obj) == "string") {
+            obj = JSON.parse(obj);
         }
+
+        var request = new SessionRequest();
+        request.address = obj.address;
         return request;
     }
 
@@ -135,23 +125,15 @@ class SessionResponse {
      * }
      */
     static fromJSON(json) {
-        var response = new SessionResponse();
-        try {
-            JSON.parse(json, function(field, value) {
-                if (field=='address') {
-                    response.address = value;
-                } else if (field=='requestTimeStamp') {
-                    response.requestTimeStamp = value;
-                } else if (field=='message') {
-                    response.message = value;
-                } else if (field=='validationWindow') {
-                    response.validationWindow = value;
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            response = null;
+        let obj = json;
+        if (typeof(obj) == "string") {
+            obj = JSON.parse(obj);
         }
+        var response = new SessionResponse();
+        response.address = obj.address;
+        response.requestTimeStamp = obj.requestTimeStamp;
+        response.message = obj.message;
+        response.validationWindow = obj.validationWindow;
         return response;
     }
 
@@ -185,19 +167,13 @@ class AuthenticationRequest {
      * @param {string} json
      */
     static fromJSON(json) {
-        var request = new AuthenticationRequest();
-        try {
-            JSON.parse(json, function(field, value) {
-                if (field=='address') {
-                    request.address = value;
-                } else if (field == 'signature') {
-                    request.signature = value;
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            request = null;
+        let obj = json;
+        if (typeof(obj) == "string") {
+            obj = JSON.parse(obj);
         }
+        var request = new AuthenticationRequest();
+        request.address = obj.address;
+        request.signature = obj.signature;
         return request;
     }
 
@@ -232,33 +208,18 @@ class AuthenticationResponse {
      * }
      */
     static fromJSON(json) {
-        var response = new AuthenticationResponse();
-        try {
-            JSON.parse(json, function(field, value) {
-                if (field=='registerStar') {
-                    response.address = value;
-                } else if (field=='status') {
-                    var status = {};
-                    JSON.parse(value, function(f, v) {
-                        if (field=='addrees') {
-                            status.address = v;
-                        } else if (field=='requestTimeStamp') {
-                            status.requestTimeStamp = v;
-                        } else if (field=='message') {
-                            status.message = v;
-                        } else if (field=='validationWindow') {
-                            status.validationWindow = v;
-                        } else if (field=='messageSignature') {
-                            status.messageSignature = v;
-                        }
-                    })
-                    response.status = status;
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            response = null;
+        let obj = json;
+        if (typeof(obj) == "string") {
+            obj = JSON.parse(obj);
         }
+        var response = new AuthenticationResponse();
+        response.registerStar = obj.registerStar;
+        response.status = obj.status;
+        response.status.address = obj.status.address;
+        response.status.requestTimeStamp = obj.status.requestTimeStamp;
+        response.status.message = obj.status.message;
+        response.status.validationWindow = obj.status.validationWindow;
+        response.status.messageSignature = obj.status.messageSignature;
         return response;
     }
 

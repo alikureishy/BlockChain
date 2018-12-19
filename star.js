@@ -3,6 +3,8 @@
  */
 const format = require('string-format');
 format.extend(String.prototype, {})
+const assert = require('assert');
+const Block = require('./blockChain.js').Block;
 
 class StarRecord {
     /**
@@ -21,7 +23,7 @@ class StarRecord {
      */
     static fromJSON(json) {
         let obj = json;
-        if (typeof(json) == "string") {
+        if (typeof(obj) == "string") {
             obj = JSON.parse(json);
         }
         var starRecord = new StarRecord();
@@ -30,9 +32,56 @@ class StarRecord {
         return starRecord;
     }
 
-    // toJSON() {
-    //     return JSON.stringify(this);
-    // }
+    hasRequiredFields() {
+        return this.star.hasRequiredFields();
+    }
+
+    /**
+     * This will return FALSE if:
+     * - block is null
+     * - block is not of Block type
+     * - block does not have a body (except if Genesis block)
+     * - block has a body that is not of StarRecord type (except if Genesis block)
+     * 
+     * A genesis block is *always* considered starrified.
+     * 
+     * @param {Block} block 
+     */
+    static isBlockStarrified(block) {
+        let isStarrified = true;
+        if ((block==null) || (block.constructor.name != "Block")) {
+            isStarrified = false;
+        } else if (!block.isGenesisBlock()) {
+            if (block.body!=null) {
+                isStarrified = false;
+            } else if (block.body.constructor.name != "StarRecord") {
+                isStarrified = false;
+            }
+        }
+        return isStarrified;
+    }
+
+    /**
+     * The block MUST not be null and the type of the Block MUST be Block
+     * 
+     * This method will return the same block (untouched) ONLY if:
+     * - it is already starrified
+     * - it has a null body
+     * ... otherwise, it will convert the body into a StarRecord type.
+     * 
+     * @param {Block} block 
+     */
+    static starrifyBlock(block) {
+        assert(block!=null, "Null block cannot be starrified");
+        assert(block.constructor.name == "Block", "Non-Block type cannot be starrified");
+        let starrifiedBlock = block;
+        if (!StarRecord.isBlockStarrified(block)) {
+            if (block.body!=null) {
+                block.body = StarRecord.fromJSON(block.body);
+            }
+        }
+        return starrifiedBlock;
+    }
 
     static encodeStarRecord(starRecord) {
         let story = starRecord.star.story;
@@ -48,7 +97,7 @@ class StarRecord {
         let buf = new Buffer(encoded, 'hex');
         let decoded = buf.toString('ascii');
         starRecord.star.decodedStory = decoded;
-        block.body = JSON.stringify(starRecord);
+        block.body = starRecord;
         return block;
     }
 
@@ -86,32 +135,15 @@ class Star {
         }
 
         return star;
-
-        // var star = new Star();
-        // try {
-        //     JSON.parse(blob, function(field, value) {
-        //         if (field=='ra') {
-        //             star.ra = value;
-        //         } else if (field=='dec') {
-        //             star.dec = value;
-        //         } else if (field=='mag') {
-        //             star.mag = value;
-        //         } else if (field=='cen') {
-        //             star.cen = value;
-        //         } else if (field=='story') {
-        //             star.story = value;
-        //         }
-        //     });
-        // } catch (error) {
-        //     console.error(error);
-        //     star = null;
-        // }
-        // return star;
     }
 
-    // toJSON() {
-    //     return JSON.stringify(this);
-    // }
+    hasRequiredFields() {
+        let result = true;
+        if (this.ra == null) result = false;
+        else if (this.dec == null) result = false;
+        else if (this.story == null) result = false;
+        return result;
+    }
 
     getId() {
         return "{}:{}:{}:{}".format(this.ra, this.dec, this.mag, this.cen)
