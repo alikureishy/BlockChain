@@ -1,100 +1,42 @@
-# Blockchain
+# Overview
 
-This project is a work in progress. I will be gradually adding additional functionality, culminating (ideally) in a fully functional blockchain implementation.
+This project implements a very simple blockchain that stores digital assets; in this case, information about stars, and their ownership (by wallet address). This is a very rudimentary blockchain for the time being. More enhancements are in progress.
 
-## Overview
+# Server APIs
+The server has been implemented using the **Hapi.js** framework for NodeJS.
 
-Here I have listed the essential files and APIs exposed by them.
-
-## Implementation
-
-### BlockChain Server
-
-A server has been implemented using the **Hapi.js** framework.
+## REST Endpoints
 
 The endpoints exposed by this server, for blockchain operations are:
 
 | Purpose  | HTTP Verb | URL | Request-Body | Expected-Response |
 | ------------- | ---------- | --- | ---------------------- | --- |
 | Get-Block-Count  | GET  |  http://localhost:8000/block/count |     | "{count}" |
-| Add-New-Block  | POST  | http://localhost:8000/block  | { "body" : "{block-name-here}" } | |
-| Get-Block  | GET  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
+| Get-Star By Height | GET  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
+| Get-Star By Hash | GET  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
+| Request Validation  | POST  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
+| Authenticate  | POST  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
+| Register New Star  | POST  | http://localhost:8000/block  | { "body" : "{<Star Record(Digital Asset) JSON>" } | |
+| Get-Blocks By Address | GET  |  http://localhost:8000/block/address:<Address> | | "{JSON List of Blocks}" |
 
-**Relevant files**:
-```
-- server.js
-- blockChainServer.js
-```
+# Implementation
 
-**Launching the server**:
-```
-node server.js
-```
+## Relevant files
 
-#### Unit Tests
+This gives a high level overview of the project code, by discussing the focus of each js file:
 
-The tests include:
-- REST-based test for getting the count of blocks in the chain
-- REST-based test for adding a new block into the chain
-- REST-based test for retrieving a specifif block from the chain
+ | File name        | Purpose  |
+ | ---------        | -------  |
+ | server.js        | Wrapper class to start the server from the command-line |
+ | rest-layer.js    | REST Routes for the server |
+ | payload.js       | Request and response objects |
+ | star.js          | Classes representing star information |
+ | mempool.js       | To implement validation windows |
+ | security-layer.js| To authenticate signatures |
+ | blockChain.js    | Underlying blockchain class with concept of blocks as units of storage |
+ | blockStore.js    | Underlying DOA layer with concept of blobs as units of storage (direc to leveldb) |
 
-Tests are included in the file at:
-```
-- test/
-    - testBlockChainServer.js
-```
-
-### Block Class
-
-**In file**: blockChain.js
-
-Very simple class for creating blocks and calling various functions on them.
-
-**class Block:**
-*APIs:*
-- createGenesisBlock(): Block
-- fromBlob(blob): Block
-- toString(): String
-- calculateHash(): String
-- validate(): Bool
-- isPrecursorTo(nextBlock): Bool
-
-### BlockChain Class
-
-Promises are used to interact with LevelDB. As a result, all callers must also be "promisified", which is what I have done. Almost every method in the BlockChain class returns a Promise.
-
-This is the meat of the blockchain implementation. This class exposes (via Promises) the APIs needed for maintaining a blockchain. It utilizes another class for accessing/persisting blockchain data from/to the file system.
-
-When initialized, it checks whether the leveldb already exists, and if so, it initializes itself from that data, and normal blockchain operations (addBlock, getBlock, etc) can continue after that.
-
-**In file**: blockChain.js
-
-**class BlockChain**
-*APIs:*
-- createBlockChainAnd(): Promise(blockChain)
-- addBlockAnd(block): Promise(block)
-- getBestBlockAnd(): Promise(block)
-- getBlockAnd(height): Promise(block)
-- getBlockCountAnd(): Promise(count)
-- getBestBlockHeightAnd(): Promise(count)
-- validateBlockAnd(height): Promise(isValid)
-- validateBlockChainAnd(): Promise([hashErrors, linkErrors])
-
-### Persistor Class
-
-This is the wrapper class utilized by the BlockChain class, as a proxy to the leveldb APIs. Since the leveldb API returns Promises, the Persistor class API does the same, and so does the BlockChain class above it.
-
-**In file**: blockStore.js
-
-**class Persistor** (wrapper for **LevelDB** access)
-*APIs:*
-- createPersistorAnd(): Promise(persistor)
-- printBlobs(): n/a
-- getBlobAnd(key): Promise(blob)
-- addBlobAnd(key, blob): Promise(totalCount)
-- updateBlobAnd(key, blob): Promise(totalCount)
-- getBlobCount(): count
-
+# Usage
 
 ## Installation
 
@@ -111,25 +53,47 @@ Installing Node and NPM is pretty straightforward using the installer package av
 npm init
 npm install
 ```
-#### Unit Tests
 
-The tests include:
-- Test of the hash calculation facility on the Block class
-- Test of the initialization of the blockchain with the genesis block
-- Test for the growth of the blockchain (sequence of block additions and verification of various metadata etc).
-- Test for checking the validity of the blockchain (for a valid chain and also for a corrupted chain)
+## Launching the server
+
+The server can be launched from the command-line as follows:
+
+```
+node server.js
+```
+
+## Unit Tests
+
+Mocha (with Chai) has been used to build unit tests for this blockchain implementation.
 
 Tests are included in the file at:
 ```
 - test/
+    - testBlockChainServer.js
+        - Test GET http://localhost:8000/block/count
+        - Test GET http://localhost:8000/block/{height}
+        - Test GET http://localhost:8000/block/hash:{hash}
+        - Test GET http://localhost:8000/block/address:{address}
+        - Test POST http://localhost:8000/requestValidation
+        - Test POST http://localhost:8000/message-signature/validate
+        - Test POST http://localhost:8000/block
     - testBlockChain.js
+        - Test chain initialization
+        - Test hash calculation
+        - Test chain growth
+    - testAuthenticator.js
+        - Test message signing and signature verification
 ```
 
-## Testing
-
-Mocha (with Chai) has been used to build tests for this blockchain implementation.
-
-To invoke all the unit tests of this project, please run:
+To run the tests, please run the following command:
 ```
 npm test
 ```
+This will run all the test cases listed above.
+
+# Appendix
+
+## Promises
+
+Promises are used to interact with LevelDB. As a result, all callers must also be "promisified", which is what I have done. Almost every method in the BlockChain class returns a Promise. The coding style is mostly archaic at the moment; while many references to Promises use the async/await syntax, the archaic code mostly utilizes the then() construct.
+
