@@ -1,11 +1,11 @@
-# Overview
+## Overview
 
 This project implements a very simple blockchain that stores digital assets; in this case, information about stars, and their ownership (by wallet address). This is a very rudimentary blockchain for the time being. More enhancements are in progress.
 
-# Server APIs
+## Server APIs
 The server has been implemented using the **Hapi.js** framework for NodeJS.
 
-## REST Endpoints
+### REST Endpoints
 
 The endpoints exposed by this server, for blockchain operations are:
 
@@ -19,9 +19,9 @@ The endpoints exposed by this server, for blockchain operations are:
 | Register New Star  | POST  | http://localhost:8000/block  | { "body" : "{<Star Record(Digital Asset) JSON>" } | |
 | Get-Blocks By Address | GET  |  http://localhost:8000/block/address:<Address> | | "{JSON List of Blocks}" |
 
-# Implementation
+## Implementation
 
-## Relevant files
+### Relevant files
 
 This gives a high level overview of the project code, by discussing the focus of each js file:
 
@@ -36,17 +36,17 @@ This gives a high level overview of the project code, by discussing the focus of
  | blockChain.js    | Underlying blockchain class with concept of blocks as units of storage |
  | blockStore.js    | Underlying DOA layer with concept of blobs as units of storage (direc to leveldb) |
 
-# Usage
+## Usage
 
-## Installation
+### Installation
 
 Please follow these steps to launch/use this project.
 
-### Prerequisites
+#### Prerequisites
 
 Installing Node and NPM is pretty straightforward using the installer package available from the (Node.js® web site)[https://nodejs.org/en/].
 
-### Configuration
+#### Configuration
 
 - Use NPM to initialize the project (package.json will ensure that all the relevant project dependencies are installed).
 ```
@@ -54,7 +54,7 @@ npm init
 npm install
 ```
 
-## Launching the server
+### Launching the server
 
 The server can be launched from the command-line as follows:
 
@@ -62,7 +62,7 @@ The server can be launched from the command-line as follows:
 node server.js
 ```
 
-## Unit Tests
+### Unit Tests
 
 Mocha (with Chai) has been used to build unit tests for this blockchain implementation.
 
@@ -91,9 +91,9 @@ npm test
 ```
 This will run all the test cases listed above.
 
-# Appendix
+## Appendix
 
-## Promises
+### Promises
 
 Promises are used to interact with LevelDB. As a result, all callers must also be "promisified", which is what I have done. Almost every method in the BlockChain class returns a Promise. The coding style is mostly archaic at the moment; while many references to Promises use the async/await syntax, the archaic code mostly utilizes the then() construct.
 
