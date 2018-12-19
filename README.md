@@ -63,6 +63,14 @@ node server.js
 
 The default server is setup to listen to port 8000.
 
+### Client Scripts
+
+I have included an export of a postman configuration for the APIs above. This is located under:
+```
+<project-root>/resources/postman/StarRegistry.postman_collection.json
+```
+Import the above file into the postman app and then use the APIs there (taking care to fill in the appropriate fields for the REST requests).
+
 ### Unit Tests
 
 Mocha (with Chai) has been used to build unit tests for this blockchain implementation.
