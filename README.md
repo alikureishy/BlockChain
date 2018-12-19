@@ -11,13 +11,13 @@ The endpoints exposed by this server, for blockchain operations are:
 
 | Purpose  | HTTP Verb | URL | Request-Body | Expected-Response |
 | ------------- | ---------- | --- | ---------------------- | --- |
-| Get-Block-Count  | GET  |  http://localhost:8000/block/count |     | "{count}" |
-| Get-Star By Height | GET  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
-| Get-Star By Hash | GET  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
-| Request Validation  | POST  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
-| Authenticate  | POST  |  http://localhost:8000/block/count/{height} | | "{JSON-of-block-object}" |
-| Register New Star  | POST  | http://localhost:8000/block  | { "body" : "{<Star Record(Digital Asset) JSON>" } | |
-| Get-Blocks By Address | GET  |  http://localhost:8000/block/address:<Address> | | "{JSON List of Blocks}" |
+| Get-Block-Count       | GET   | http://localhost:8000/block/count             |                            | "{count}" |
+| Get-Star By Height    | GET   | http://localhost:8000/block/count/{height}    |                            | "{JSON-of-block-object}" |
+| Get-Star By Hash      | GET   | http://localhost:8000/block/count/{height}    |                            | "{JSON-of-block-object}" |
+| Get-Blocks By Address | GET   | http://localhost:8000/block/address:<Address> |                            | "{JSON List of Blocks}" |
+| Request Validation    | POST  | http://localhost:8000/block/count/{height}    | "JSON of wallet address"   | "Auth challenge & window " |
+| Authenticate          | POST  | http://localhost:8000/block/count/{height}    | "JSON w/ address & signed challenge" | "Approval to register 1 star" |
+| Register New Star     | POST  | http://localhost:8000/block                   | { "body" : "{<Star Record(Digital Asset) JSON>" } |  {JSON of entire added block} |
 
 ## Implementation
 
@@ -46,13 +46,11 @@ Please follow these steps to launch/use this project.
 
 Installing Node and NPM is pretty straightforward using the installer package available from the (Node.js® web site)[https://nodejs.org/en/].
 
-#### Configuration
-
-- Use NPM to initialize the project (package.json will ensure that all the relevant project dependencies are installed).
+Then, clone this repository to your local machine, and run the following command from within the project folder:
 ```
-npm init
 npm install
 ```
+The project is now ready for use.
 
 ### Launching the server
 
@@ -61,6 +59,8 @@ The server can be launched from the command-line as follows:
 ```
 node server.js
 ```
+
+The default server is setup to listen to port 8000.
 
 ### Unit Tests
 
