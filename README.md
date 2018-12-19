@@ -14,7 +14,7 @@ The endpoints exposed by this server, for blockchain operations are:
 | Get-Block-Count       | GET   | http://localhost:8000/block/count             |                            | "{count}" |
 | Get-Star By Height    | GET   | http://localhost:8000/block/{height}    |                            | "{JSON-of-block-object}" |
 | Get-Star By Hash      | GET   | http://localhost:8000/stars/hash:{hash}    |                            | "{JSON-of-block-object}" |
-| Get-Blocks By Address | GET   | http://localhost:8000/stars/address:<address> |                            | "{JSON List of Blocks}" |
+| Get-Blocks By Address | GET   | http://localhost:8000/stars/address:{address} |                            | "{JSON List of Blocks}" |
 | Dump all DB content | GET   | http://localhost:8000/raw |                            | "{JSON List of all VALUES in DB}" |
 | Request Validation    | POST  | http://localhost:8000/requestValidation    | "JSON of wallet address"   | "Auth challenge & window " |
 | Authenticate          | POST  | http://localhost:8000/message-signature/validate    | "JSON w/ address & signed challenge" | "Approval to register 1 star" |
